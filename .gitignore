@@ -1,0 +1,4 @@
+.env
+lib/
+*.sqlite3
+hubv2

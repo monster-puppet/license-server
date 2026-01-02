@@ -1,0 +1,15 @@
+[Unit]
+Description=Hub v2 File Server
+After=network.target
+
+[Service]
+Type=simple
+User=exedev
+WorkingDirectory=/home/exedev/hubv2
+EnvironmentFile=/home/exedev/hubv2/.env
+ExecStart=/home/exedev/hubv2/hubv2 -listen :8000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
