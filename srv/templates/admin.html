@@ -166,6 +166,29 @@
             border-radius: 4px;
             word-break: break-all;
             color: #888;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .token-text {
+            flex: 1;
+            word-break: break-all;
+        }
+        .token-hidden {
+            color: #555;
+            letter-spacing: 2px;
+        }
+        .btn-show {
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            padding: 4px;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        .btn-show:hover {
+            color: #fff;
         }
         .protected-label {
             color: #555;
@@ -447,10 +470,13 @@
                         <span class="badge badge-{{.TokenType}}">{{.TokenType}}</span>
                     </td>
                     <td>
-                        <div class="token-value">{{.Token}}</div>
+                        <div class="token-value">
+                            <span class="token-text token-hidden" data-token="{{.Token}}">••••••••••••••••</span>
+                            <button type="button" class="btn-show" onclick="toggleToken(this)" title="Show/hide token">👁️</button>
+                        </div>
                     </td>
                     <td style="white-space: nowrap;">
-                        <form method="POST" action="/token/regenerate" style="display:inline-block; margin:0" onsubmit="return confirm('Regenerate this token? The old token will stop working.')">
+                        <form method="POST" action="/token/regenerate" style="display:inline-block; margin:0" onsubmit="return confirmRegenerate(this, '{{.Name}}')">
                             <input type="hidden" name="id" value="{{.ID}}">
                             <button type="submit" class="btn-action">🔄 Regenerate</button>
                         </form>
@@ -475,10 +501,13 @@
                     <span class="badge badge-{{.TokenType}}">{{.TokenType}}</span>
                 </div>
                 <div class="token-card-value">
-                    <div class="token-value">{{.Token}}</div>
+                    <div class="token-value">
+                        <span class="token-text token-hidden" data-token="{{.Token}}">••••••••••••••••</span>
+                        <button type="button" class="btn-show" onclick="toggleToken(this)" title="Show/hide token">👁️</button>
+                    </div>
                 </div>
                 <div class="token-card-actions">
-                    <form method="POST" action="/token/regenerate" style="margin:0" onsubmit="return confirm('Regenerate this token? The old token will stop working.')">
+                    <form method="POST" action="/token/regenerate" style="margin:0" onsubmit="return confirmRegenerate(this, '{{.Name}}')">
                         <input type="hidden" name="id" value="{{.ID}}">
                         <button type="submit" class="btn-action">🔄 Regenerate</button>
                     </form>
@@ -590,6 +619,30 @@
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') hideHistory();
         });
+
+        function toggleToken(btn) {
+            const span = btn.parentElement.querySelector('.token-text');
+            const isHidden = span.classList.contains('token-hidden');
+            if (isHidden) {
+                span.textContent = span.dataset.token;
+                span.classList.remove('token-hidden');
+                btn.textContent = '🙈';
+                btn.title = 'Hide token';
+            } else {
+                span.textContent = '••••••••••••••••';
+                span.classList.add('token-hidden');
+                btn.textContent = '👁️';
+                btn.title = 'Show token';
+            }
+        }
+
+        function confirmRegenerate(form, name) {
+            const confirmed = confirm(`Regenerate token for "${name}"?\n\nThe old token will immediately stop working. Any clients using it will need to be updated.`);
+            if (confirmed) {
+                form.submit();
+            }
+            return false;
+        }
     </script>
 </body>
 </html>
