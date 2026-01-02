@@ -654,6 +654,11 @@ func (s *Server) generatePackage(tokenName, tokenValue string, mayaVersions []st
 			return nil
 		}
 
+		// Skip the latest file in bin/
+		if strings.HasSuffix(path, "bin/latest") || strings.HasSuffix(path, "bin\\latest") {
+			return nil
+		}
+
 		// Get relative path
 		relPath, err := filepath.Rel(templateDir, path)
 		if err != nil {
@@ -663,6 +668,12 @@ func (s *Server) generatePackage(tokenName, tokenValue string, mayaVersions []st
 		// Handle the .mod file rename
 		if strings.HasSuffix(relPath, "newclient.mod") {
 			relPath = strings.Replace(relPath, "newclient.mod", tokenName+".mod", 1)
+		}
+
+		// Handle the pbp folder rename to token name
+		if strings.Contains(relPath, "scripts/pbp") || strings.Contains(relPath, "scripts\\pbp") {
+			relPath = strings.Replace(relPath, "scripts/pbp", "scripts/"+tokenName, 1)
+			relPath = strings.Replace(relPath, "scripts\\pbp", "scripts\\"+tokenName, 1)
 		}
 
 		if info.IsDir() {
