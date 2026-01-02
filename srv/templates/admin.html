@@ -11,7 +11,9 @@
             max-width: 900px;
             margin: 0 auto;
             padding: 20px;
-            background: #f5f5f5;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            min-height: 100vh;
         }
         .header {
             display: flex;
@@ -19,28 +21,43 @@
             align-items: center;
             margin-bottom: 30px;
             padding-bottom: 20px;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid #333;
         }
-        .header h1 { margin: 0; color: #333; }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .logo {
+            height: 50px;
+            width: auto;
+        }
+        .header h1 {
+            margin: 0;
+            color: #fff;
+            font-size: 24px;
+            font-weight: 500;
+        }
         .user-info {
             display: flex;
             align-items: center;
             gap: 15px;
         }
-        .user-info span { color: #666; }
-        a { color: #0066cc; text-decoration: none; }
-        a:hover { text-decoration: underline; }
+        .user-info span { color: #888; }
+        a { color: #e74c3c; text-decoration: none; }
+        a:hover { text-decoration: underline; color: #ff6b5b; }
         .card {
-            background: white;
+            background: #151515;
             border-radius: 8px;
             padding: 20px;
             margin-bottom: 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #252525;
         }
         .card h2 {
             margin-top: 0;
-            color: #333;
+            color: #fff;
             font-size: 18px;
+            font-weight: 500;
         }
         table {
             width: 100%;
@@ -49,52 +66,78 @@
         th, td {
             text-align: left;
             padding: 12px;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid #252525;
         }
-        th { color: #666; font-weight: 500; }
+        th { color: #888; font-weight: 500; }
         .token-value {
             font-family: monospace;
             font-size: 12px;
-            background: #f0f0f0;
+            background: #1a1a1a;
             padding: 4px 8px;
             border-radius: 4px;
             word-break: break-all;
+            color: #e0e0e0;
         }
         .badge {
             display: inline-block;
-            padding: 4px 8px;
+            padding: 4px 10px;
             border-radius: 4px;
             font-size: 12px;
             font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        .badge-upload { background: #e3f2fd; color: #1565c0; }
-        .badge-download { background: #e8f5e9; color: #2e7d32; }
+        .badge-upload { background: #2a1a1a; color: #e74c3c; border: 1px solid #e74c3c; }
+        .badge-download { background: #1a2a1a; color: #4caf50; border: 1px solid #4caf50; }
         input[type="text"] {
             width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
+            padding: 10px;
+            border: 1px solid #333;
             border-radius: 4px;
             font-family: monospace;
             font-size: 12px;
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #e74c3c;
+        }
+        input[type="text"]::placeholder {
+            color: #555;
         }
         select {
-            padding: 8px;
-            border: 1px solid #ddd;
+            padding: 10px;
+            border: 1px solid #333;
             border-radius: 4px;
+            background: #1a1a1a;
+            color: #e0e0e0;
         }
         button {
-            padding: 8px 16px;
+            padding: 10px 18px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
         }
-        .btn-primary { background: #0066cc; color: white; }
-        .btn-primary:hover { background: #0052a3; }
-        .btn-danger { background: #dc3545; color: white; }
-        .btn-danger:hover { background: #c82333; }
-        .btn-secondary { background: #6c757d; color: white; }
-        .btn-secondary:hover { background: #5a6268; }
+        .btn-primary {
+            background: #e74c3c;
+            color: white;
+        }
+        .btn-primary:hover { background: #c0392b; }
+        .btn-danger {
+            background: transparent;
+            color: #e74c3c;
+            border: 1px solid #e74c3c;
+        }
+        .btn-danger:hover { background: #e74c3c; color: white; }
+        .btn-secondary {
+            background: #333;
+            color: #e0e0e0;
+        }
+        .btn-secondary:hover { background: #444; }
         .actions { display: flex; gap: 8px; }
         .form-row {
             display: flex;
@@ -108,11 +151,19 @@
             align-items: center;
         }
         .token-input-group input { flex: 1; }
+        .protected-label {
+            color: #555;
+            font-size: 12px;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>🔐 License Server Admin</h1>
+        <div class="header-left">
+            <img src="https://timeoff.monster-puppet.com/static/logo.png" alt="Monster Puppet" class="logo">
+            <h1>License Server</h1>
+        </div>
         <div class="user-info">
             <span>{{.Email}}</span>
             <a href="/admin/logout">Logout</a>
@@ -153,7 +204,7 @@
                             <button type="submit" class="btn-danger">Delete</button>
                         </form>
                         {{else}}
-                        <span style="color:#999; font-size:12px">Protected</span>
+                        <span class="protected-label">Protected</span>
                         {{end}}
                     </td>
                 </tr>
