@@ -31,6 +31,13 @@ type Token struct {
 	MayaVersions *string   `json:"maya_versions"`
 }
 
+type UploadHistory struct {
+	ID         int64     `json:"id"`
+	FileName   string    `json:"file_name"`
+	FileSize   int64     `json:"file_size"`
+	UploadedAt time.Time `json:"uploaded_at"`
+}
+
 type Visitor struct {
 	ID        string    `json:"id"`
 	ViewCount int64     `json:"view_count"`

@@ -222,7 +222,21 @@ func (s *Server) HandleUploadLatest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Info("Uploaded new file", "path", filePath)
+	// Get file size for history
+	fi, _ := os.Stat(filePath)
+	fileSize := fi.Size()
+
+	// Record in upload history
+	q := dbgen.New(s.DB)
+	q.AddUploadHistory(r.Context(), dbgen.AddUploadHistoryParams{
+		FileName:   s.LatestFile,
+		FileSize:   fileSize,
+		UploadedAt: time.Now(),
+	})
+	// Trim history to last 100 entries
+	q.TrimUploadHistory(r.Context())
+
+	slog.Info("Uploaded new file", "path", filePath, "size", fileSize)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte(fmt.Sprintf(`{"message": "File uploaded successfully", "filename": "%s"}`, s.LatestFile)))
 }
@@ -759,6 +773,24 @@ func (w *writerAdapter) Write(p []byte) (n int, err error) {
 	return w.b.Write(p)
 }
 
+func (s *Server) HandleUploadHistory(w http.ResponseWriter, r *http.Request) {
+	email := s.getSessionEmail(r)
+	if email == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	q := dbgen.New(s.DB)
+	history, err := q.GetUploadHistory(r.Context(), 100)
+	if err != nil {
+		http.Error(w, "Failed to get history", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(history)
+}
+
 func (s *Server) HandleUploadTemplate(w http.ResponseWriter, r *http.Request) {
 	token := r.Header.Get("Authorization")
 	if token != s.getUploadToken() {
@@ -815,6 +847,7 @@ func (s *Server) Serve(addr string) error {
 	mux.HandleFunc("GET /download/latest", s.HandleDownloadLatest)
 	mux.HandleFunc("POST /upload/latest", s.HandleUploadLatest)
 	mux.HandleFunc("POST /upload/template", s.HandleUploadTemplate)
+	mux.HandleFunc("GET /upload/history", s.HandleUploadHistory)
 	mux.HandleFunc("GET /package/{name}", s.HandlePackageDownload)
 
 	// Admin routes

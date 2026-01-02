@@ -194,6 +194,105 @@
             color: #555;
             font-style: italic;
         }
+        .btn-history {
+            margin-top: 15px;
+            background: transparent;
+            color: #888;
+            border: 1px solid #333;
+        }
+        .btn-history:hover {
+            background: #222;
+            border-color: #444;
+            color: #e0e0e0;
+        }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal {
+            background: #151515;
+            border: 1px solid #333;
+            border-radius: 8px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #252525;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h3 {
+            margin: 0;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 500;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+        .modal-close:hover {
+            color: #fff;
+        }
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .history-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .history-item {
+            padding: 12px 0;
+            border-bottom: 1px solid #252525;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+        }
+        .history-item:last-child {
+            border-bottom: none;
+        }
+        .history-date {
+            color: #888;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+        .history-size {
+            color: #4caf50;
+            font-size: 13px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .history-empty {
+            color: #555;
+            font-style: italic;
+            text-align: center;
+            padding: 30px;
+        }
         .maya-versions {
             margin: 15px 0;
         }
@@ -298,9 +397,11 @@
                     <span><strong>Size:</strong> {{.File.Size}}</span>
                     <span><strong>Last Modified:</strong> {{.File.Modified}}</span>
                 </div>
+                <button class="btn-history" onclick="showHistory()">📜 View Upload History</button>
             </div>
             {{else}}
             <div class="file-empty">No file uploaded yet</div>
+            <button class="btn-history" onclick="showHistory()">📜 View Upload History</button>
             {{end}}
         </div>
     </div>
@@ -409,5 +510,82 @@
             </div>
         </form>
     </div>
+
+    <!-- Upload History Modal -->
+    <div class="modal-overlay" id="historyModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>📜 Upload History</h3>
+                <button class="modal-close" onclick="hideHistory()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <ul class="history-list" id="historyList">
+                    <li class="history-empty">Loading...</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function formatSize(bytes) {
+            if (bytes >= 1024 * 1024) {
+                return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+            } else if (bytes >= 1024) {
+                return (bytes / 1024).toFixed(2) + ' KB';
+            }
+            return bytes + ' bytes';
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+            });
+        }
+
+        async function showHistory() {
+            document.getElementById('historyModal').classList.add('active');
+            const list = document.getElementById('historyList');
+            list.innerHTML = '<li class="history-empty">Loading...</li>';
+
+            try {
+                const resp = await fetch('/upload/history');
+                if (!resp.ok) throw new Error('Failed to fetch');
+                const history = await resp.json();
+
+                if (!history || history.length === 0) {
+                    list.innerHTML = '<li class="history-empty">No upload history</li>';
+                    return;
+                }
+
+                list.innerHTML = history.map(item => `
+                    <li class="history-item">
+                        <span class="history-date">${formatDate(item.uploaded_at)}</span>
+                        <span class="history-size">${formatSize(item.file_size)}</span>
+                    </li>
+                `).join('');
+            } catch (err) {
+                list.innerHTML = '<li class="history-empty">Failed to load history</li>';
+            }
+        }
+
+        function hideHistory() {
+            document.getElementById('historyModal').classList.remove('active');
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('historyModal').addEventListener('click', function(e) {
+            if (e.target === this) hideHistory();
+        });
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') hideHistory();
+        });
+    </script>
 </body>
 </html>
