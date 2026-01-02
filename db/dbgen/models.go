@@ -14,6 +14,22 @@ type Migration struct {
 	ExecutedAt      time.Time `json:"executed_at"`
 }
 
+type Session struct {
+	ID        string    `json:"id"`
+	Email     string    `json:"email"`
+	CreatedAt time.Time `json:"created_at"`
+	ExpiresAt time.Time `json:"expires_at"`
+}
+
+type Token struct {
+	ID        int64     `json:"id"`
+	Name      string    `json:"name"`
+	Token     string    `json:"token"`
+	TokenType string    `json:"token_type"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 type Visitor struct {
 	ID        string    `json:"id"`
 	ViewCount int64     `json:"view_count"`

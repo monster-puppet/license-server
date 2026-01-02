@@ -19,7 +19,7 @@ func main() {
 
 func run() error {
 	flag.Parse()
-	server, err := srv.New()
+	server, err := srv.New("db.sqlite3")
 	if err != nil {
 		return fmt.Errorf("create server: %w", err)
 	}
