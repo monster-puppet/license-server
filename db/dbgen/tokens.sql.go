@@ -35,23 +35,40 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) er
 }
 
 const createToken = `-- name: CreateToken :one
-INSERT INTO tokens (name, token, token_type) VALUES (?, ?, ?) RETURNING id, name, token, token_type, created_at, updated_at
+INSERT INTO tokens (name, token, token_type, maya_versions) VALUES (?, ?, ?, ?) RETURNING id, name, token, token_type, maya_versions, created_at, updated_at
 `
 
 type CreateTokenParams struct {
-	Name      string `json:"name"`
-	Token     string `json:"token"`
-	TokenType string `json:"token_type"`
+	Name         string  `json:"name"`
+	Token        string  `json:"token"`
+	TokenType    string  `json:"token_type"`
+	MayaVersions *string `json:"maya_versions"`
 }
 
-func (q *Queries) CreateToken(ctx context.Context, arg CreateTokenParams) (Token, error) {
-	row := q.db.QueryRowContext(ctx, createToken, arg.Name, arg.Token, arg.TokenType)
-	var i Token
+type CreateTokenRow struct {
+	ID           int64     `json:"id"`
+	Name         string    `json:"name"`
+	Token        string    `json:"token"`
+	TokenType    string    `json:"token_type"`
+	MayaVersions *string   `json:"maya_versions"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+
+func (q *Queries) CreateToken(ctx context.Context, arg CreateTokenParams) (CreateTokenRow, error) {
+	row := q.db.QueryRowContext(ctx, createToken,
+		arg.Name,
+		arg.Token,
+		arg.TokenType,
+		arg.MayaVersions,
+	)
+	var i CreateTokenRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
 		&i.Token,
 		&i.TokenType,
+		&i.MayaVersions,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -77,23 +94,34 @@ func (q *Queries) DeleteToken(ctx context.Context, id int64) error {
 }
 
 const getAllTokens = `-- name: GetAllTokens :many
-SELECT id, name, token, token_type, created_at, updated_at FROM tokens ORDER BY token_type, name
+SELECT id, name, token, token_type, maya_versions, created_at, updated_at FROM tokens ORDER BY token_type, name
 `
 
-func (q *Queries) GetAllTokens(ctx context.Context) ([]Token, error) {
+type GetAllTokensRow struct {
+	ID           int64     `json:"id"`
+	Name         string    `json:"name"`
+	Token        string    `json:"token"`
+	TokenType    string    `json:"token_type"`
+	MayaVersions *string   `json:"maya_versions"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+
+func (q *Queries) GetAllTokens(ctx context.Context) ([]GetAllTokensRow, error) {
 	rows, err := q.db.QueryContext(ctx, getAllTokens)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []Token{}
+	items := []GetAllTokensRow{}
 	for rows.Next() {
-		var i Token
+		var i GetAllTokensRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
 			&i.Token,
 			&i.TokenType,
+			&i.MayaVersions,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -154,17 +182,28 @@ func (q *Queries) GetSession(ctx context.Context, id string) (Session, error) {
 }
 
 const getTokenByName = `-- name: GetTokenByName :one
-SELECT id, name, token, token_type, created_at, updated_at FROM tokens WHERE name = ?
+SELECT id, name, token, token_type, maya_versions, created_at, updated_at FROM tokens WHERE name = ?
 `
 
-func (q *Queries) GetTokenByName(ctx context.Context, name string) (Token, error) {
+type GetTokenByNameRow struct {
+	ID           int64     `json:"id"`
+	Name         string    `json:"name"`
+	Token        string    `json:"token"`
+	TokenType    string    `json:"token_type"`
+	MayaVersions *string   `json:"maya_versions"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+
+func (q *Queries) GetTokenByName(ctx context.Context, name string) (GetTokenByNameRow, error) {
 	row := q.db.QueryRowContext(ctx, getTokenByName, name)
-	var i Token
+	var i GetTokenByNameRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
 		&i.Token,
 		&i.TokenType,
+		&i.MayaVersions,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

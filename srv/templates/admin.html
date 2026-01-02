@@ -194,6 +194,39 @@
             color: #555;
             font-style: italic;
         }
+        .maya-versions {
+            margin: 15px 0;
+        }
+        .maya-versions label:first-child {
+            color: #888;
+            display: block;
+            margin-bottom: 10px;
+        }
+        .checkbox-group {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #e0e0e0;
+            cursor: pointer;
+        }
+        .checkbox-label input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #e74c3c;
+        }
+        .download-link {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 6px 12px;
+            background: #1a1a1a;
+            border-radius: 4px;
+            font-size: 13px;
+        }
 
         /* Mobile styles */
         @media (max-width: 600px) {
@@ -281,6 +314,7 @@
                     <th>Name</th>
                     <th>Type</th>
                     <th>Token</th>
+                    <th>Package</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -299,6 +333,13 @@
                                 <button type="submit" class="btn-secondary">Save</button>
                             </div>
                         </form>
+                    </td>
+                    <td>
+                        {{if eq .TokenType "download"}}
+                        <a href="/package/{{.Name}}" class="download-link">📦 Download</a>
+                        {{else}}
+                        <span class="protected-label">-</span>
+                        {{end}}
                     </td>
                     <td>
                         {{if eq .TokenType "download"}}
@@ -331,6 +372,9 @@
                         </div>
                     </form>
                 </div>
+                {{if eq .TokenType "download"}}
+                <a href="/package/{{.Name}}" class="download-link" style="margin-bottom:12px;">📦 Download Package</a>
+                {{end}}
                 <div class="token-card-actions">
                     {{if eq .TokenType "download"}}
                     <form method="POST" action="/token/delete" style="margin:0" onsubmit="return confirm('Delete this token?')">
@@ -350,7 +394,17 @@
         <h2>Add New Download Token</h2>
         <form method="POST" action="/token/create">
             <div class="form-row">
-                <input type="text" name="name" placeholder="Token name (e.g. client-abc)" required>
+                <input type="text" name="name" placeholder="Token name (e.g. acme)" required>
+            </div>
+            <div class="maya-versions">
+                <label>Maya Versions:</label>
+                <div class="checkbox-group">
+                    <label class="checkbox-label"><input type="checkbox" name="maya_versions" value="2024" checked> 2024</label>
+                    <label class="checkbox-label"><input type="checkbox" name="maya_versions" value="2025" checked> 2025</label>
+                    <label class="checkbox-label"><input type="checkbox" name="maya_versions" value="2026" checked> 2026</label>
+                </div>
+            </div>
+            <div class="form-row" style="margin-top: 15px;">
                 <button type="submit" class="btn-primary">Create Token</button>
             </div>
         </form>

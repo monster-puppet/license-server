@@ -1,8 +1,5 @@
 -- name: GetAllTokens :many
-SELECT id, name, token, token_type, created_at, updated_at FROM tokens ORDER BY token_type, name;
-
--- name: GetTokenByName :one
-SELECT id, name, token, token_type, created_at, updated_at FROM tokens WHERE name = ?;
+SELECT id, name, token, token_type, maya_versions, created_at, updated_at FROM tokens ORDER BY token_type, name;
 
 -- name: GetDownloadTokens :many
 SELECT token FROM tokens WHERE token_type = 'download';
@@ -11,7 +8,10 @@ SELECT token FROM tokens WHERE token_type = 'download';
 SELECT token FROM tokens WHERE token_type = 'upload' LIMIT 1;
 
 -- name: CreateToken :one
-INSERT INTO tokens (name, token, token_type) VALUES (?, ?, ?) RETURNING id, name, token, token_type, created_at, updated_at;
+INSERT INTO tokens (name, token, token_type, maya_versions) VALUES (?, ?, ?, ?) RETURNING id, name, token, token_type, maya_versions, created_at, updated_at;
+
+-- name: GetTokenByName :one
+SELECT id, name, token, token_type, maya_versions, created_at, updated_at FROM tokens WHERE name = ?;
 
 -- name: UpdateToken :exec
 UPDATE tokens SET token = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?;

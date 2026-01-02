@@ -22,12 +22,13 @@ type Session struct {
 }
 
 type Token struct {
-	ID        int64     `json:"id"`
-	Name      string    `json:"name"`
-	Token     string    `json:"token"`
-	TokenType string    `json:"token_type"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID           int64     `json:"id"`
+	Name         string    `json:"name"`
+	Token        string    `json:"token"`
+	TokenType    string    `json:"token_type"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+	MayaVersions *string   `json:"maya_versions"`
 }
 
 type Visitor struct {

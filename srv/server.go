@@ -1,6 +1,7 @@
 package srv
 
 import (
+	"archive/zip"
 	"context"
 	"crypto/rand"
 	"database/sql"
@@ -16,6 +17,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	"srv.exe.dev/db"
@@ -430,7 +432,7 @@ func (s *Server) HandleAdmin(w http.ResponseWriter, r *http.Request) {
 
 	data := struct {
 		Email    string
-		Tokens   []dbgen.Token
+		Tokens   []dbgen.GetAllTokensRow
 		File     FileInfo
 		FileName string
 	}{
@@ -513,20 +515,27 @@ func (s *Server) HandleAdminCreateToken(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	mayaVersions := r.Form["maya_versions"]
+	if len(mayaVersions) == 0 {
+		mayaVersions = []string{"2024", "2025", "2026"}
+	}
+	mayaVersionsStr := strings.Join(mayaVersions, ",")
+
 	tokenValue := generateToken()
 
 	q := dbgen.New(s.DB)
 	_, err := q.CreateToken(r.Context(), dbgen.CreateTokenParams{
-		Name:      name,
-		Token:     tokenValue,
-		TokenType: "download",
+		Name:         name,
+		Token:        tokenValue,
+		TokenType:    "download",
+		MayaVersions: &mayaVersionsStr,
 	})
 	if err != nil {
 		http.Error(w, "Failed to create token: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	slog.Info("Token created", "name", name, "by", email)
+	slog.Info("Token created", "name", name, "maya_versions", mayaVersionsStr, "by", email)
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
@@ -576,11 +585,226 @@ func generateRandomString(n int) string {
 	return base64.URLEncoding.EncodeToString(b)[:n]
 }
 
+func (s *Server) HandlePackageDownload(w http.ResponseWriter, r *http.Request) {
+	email := s.getSessionEmail(r)
+	if email == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	tokenName := r.PathValue("name")
+	if tokenName == "" {
+		http.Error(w, "Missing token name", http.StatusBadRequest)
+		return
+	}
+
+	q := dbgen.New(s.DB)
+	token, err := q.GetTokenByName(r.Context(), tokenName)
+	if err != nil {
+		http.Error(w, "Token not found", http.StatusNotFound)
+		return
+	}
+
+	if token.TokenType != "download" {
+		http.Error(w, "Cannot generate package for upload token", http.StatusBadRequest)
+		return
+	}
+
+	var mayaVersions []string
+	if token.MayaVersions != nil && *token.MayaVersions != "" {
+		mayaVersions = strings.Split(*token.MayaVersions, ",")
+	}
+	if len(mayaVersions) == 0 {
+		mayaVersions = []string{"2024", "2025", "2026"}
+	}
+
+	// Generate the package
+	zipData, err := s.generatePackage(tokenName, token.Token, mayaVersions)
+	if err != nil {
+		slog.Error("Failed to generate package", "error", err)
+		http.Error(w, "Failed to generate package: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/zip")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s_workspace.zip", tokenName))
+	w.Write(zipData)
+}
+
+func (s *Server) generatePackage(tokenName, tokenValue string, mayaVersions []string) ([]byte, error) {
+	templateDir := "/home/exedev/hubv2/templates"
+
+	// Check if template exists
+	if _, err := os.Stat(filepath.Join(templateDir, "Tools")); os.IsNotExist(err) {
+		return nil, fmt.Errorf("template not found - please upload CLIENT_WORKSPACE_TEMPLATE.zip first")
+	}
+
+	// Create a buffer to write the zip to
+	var buf strings.Builder
+	zipWriter := zip.NewWriter(&writerAdapter{&buf})
+
+	// Walk through the template directory
+	err := filepath.Walk(templateDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Skip the zip file itself
+		if strings.HasSuffix(path, ".zip") {
+			return nil
+		}
+
+		// Get relative path
+		relPath, err := filepath.Rel(templateDir, path)
+		if err != nil {
+			return err
+		}
+
+		// Handle the .mod file rename
+		if strings.HasSuffix(relPath, "newclient.mod") {
+			relPath = strings.Replace(relPath, "newclient.mod", tokenName+".mod", 1)
+		}
+
+		if info.IsDir() {
+			if relPath != "." {
+				_, err := zipWriter.Create(relPath + "/")
+				return err
+			}
+			return nil
+		}
+
+		// Create file in zip
+		writer, err := zipWriter.Create(relPath)
+		if err != nil {
+			return err
+		}
+
+		// Handle special files
+		baseName := filepath.Base(path)
+		switch {
+		case baseName == "token":
+			// Write the token value
+			_, err = writer.Write([]byte(tokenValue))
+			return err
+
+		case baseName == "newclient.mod":
+			// Generate .mod file content
+			modContent := s.generateModContent(tokenName, mayaVersions)
+			_, err = writer.Write([]byte(modContent))
+			return err
+
+		case baseName == "settings.py":
+			// Modify settings.py
+			content, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			modified := strings.Replace(string(content), "NEW CLIENT MAYA TOOLS", tokenName, 1)
+			modified = strings.Replace(modified, "NewClientModule", tokenName+"_module", 1)
+			_, err = writer.Write([]byte(modified))
+			return err
+
+		default:
+			// Copy file as-is
+			file, err := os.Open(path)
+			if err != nil {
+				return err
+			}
+			defer file.Close()
+			_, err = io.Copy(writer, file)
+			return err
+		}
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err := zipWriter.Close(); err != nil {
+		return nil, err
+	}
+
+	return []byte(buf.String()), nil
+}
+
+func (s *Server) generateModContent(tokenName string, mayaVersions []string) string {
+	var blocks []string
+	for _, version := range mayaVersions {
+		block := fmt.Sprintf(`+ MAYAVERSION:%s %s_module 1.0.0 .
+MAYA_SHELF_PATH+:=shelves
+MAYA_NO_WARNING_FOR_MISSING_DEFAULT_RENDERER=1
+MAYA_CM_DISABLE_ERROR_POPUPS=1`, version, tokenName)
+		blocks = append(blocks, block)
+	}
+	return strings.Join(blocks, "\n\n") + "\n"
+}
+
+// writerAdapter adapts strings.Builder to io.Writer
+type writerAdapter struct {
+	b *strings.Builder
+}
+
+func (w *writerAdapter) Write(p []byte) (n int, err error) {
+	return w.b.Write(p)
+}
+
+func (s *Server) HandleUploadTemplate(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("Authorization")
+	if token != s.getUploadToken() {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte(`{"error": "Invalid token"}`))
+		return
+	}
+
+	if err := r.ParseMultipartForm(64 << 20); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error": "Failed to parse form"}`))
+		return
+	}
+
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error": "No file provided"}`))
+		return
+	}
+	defer file.Close()
+
+	templatesDir := "/home/exedev/hubv2/templates"
+	os.MkdirAll(templatesDir, 0755)
+	filePath := filepath.Join(templatesDir, "CLIENT_WORKSPACE_TEMPLATE.zip")
+
+	dst, err := os.Create(filePath)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error": "Failed to create file"}`))
+		return
+	}
+	defer dst.Close()
+
+	if _, err := io.Copy(dst, file); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error": "Failed to save file"}`))
+		return
+	}
+
+	slog.Info("Uploaded template", "path", filePath)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte(`{"message": "Template uploaded successfully"}`))
+}
+
 func (s *Server) Serve(addr string) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", s.HandleRoot)
 	mux.HandleFunc("GET /download/latest", s.HandleDownloadLatest)
 	mux.HandleFunc("POST /upload/latest", s.HandleUploadLatest)
+	mux.HandleFunc("POST /upload/template", s.HandleUploadTemplate)
+	mux.HandleFunc("GET /package/{name}", s.HandlePackageDownload)
 
 	// Admin routes
 	mux.HandleFunc("GET /login", s.HandleAdminLogin)
