@@ -156,6 +156,30 @@
             font-size: 12px;
             font-style: italic;
         }
+        .file-info {
+            padding: 15px;
+            background: #1a1a1a;
+            border-radius: 6px;
+        }
+        .file-name {
+            font-size: 18px;
+            font-weight: 500;
+            color: #fff;
+            margin-bottom: 10px;
+        }
+        .file-meta {
+            display: flex;
+            gap: 30px;
+            color: #888;
+            font-size: 14px;
+        }
+        .file-meta strong {
+            color: #aaa;
+        }
+        .file-empty {
+            color: #555;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -167,6 +191,23 @@
         <div class="user-info">
             <span>{{.Email}}</span>
             <a href="/admin/logout">Logout</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Current File</h2>
+        <div class="file-info">
+            {{if .File.Exists}}
+            <div class="file-details">
+                <div class="file-name">📦 {{.FileName}}</div>
+                <div class="file-meta">
+                    <span><strong>Size:</strong> {{.File.Size}}</span>
+                    <span><strong>Last Modified:</strong> {{.File.Modified}}</span>
+                </div>
+            </div>
+            {{else}}
+            <div class="file-empty">No file uploaded yet</div>
+            {{end}}
         </div>
     </div>
 

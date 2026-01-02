@@ -383,6 +383,37 @@ func (s *Server) getSessionEmail(r *http.Request) string {
 	return session.Email
 }
 
+type FileInfo struct {
+	Exists   bool
+	Size     string
+	Modified string
+}
+
+func (s *Server) getFileInfo() FileInfo {
+	filePath := filepath.Join(s.LibFolder, s.LatestFile)
+	info, err := os.Stat(filePath)
+	if err != nil {
+		return FileInfo{Exists: false}
+	}
+
+	size := info.Size()
+	var sizeStr string
+	switch {
+	case size >= 1024*1024:
+		sizeStr = fmt.Sprintf("%.2f MB", float64(size)/(1024*1024))
+	case size >= 1024:
+		sizeStr = fmt.Sprintf("%.2f KB", float64(size)/1024)
+	default:
+		sizeStr = fmt.Sprintf("%d bytes", size)
+	}
+
+	return FileInfo{
+		Exists:   true,
+		Size:     sizeStr,
+		Modified: info.ModTime().Format("Jan 2, 2006 at 3:04 PM"),
+	}
+}
+
 func (s *Server) HandleAdmin(w http.ResponseWriter, r *http.Request) {
 	email := s.getSessionEmail(r)
 	if email == "" {
@@ -398,11 +429,15 @@ func (s *Server) HandleAdmin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		Email  string
-		Tokens []dbgen.Token
+		Email    string
+		Tokens   []dbgen.Token
+		File     FileInfo
+		FileName string
 	}{
-		Email:  email,
-		Tokens: tokens,
+		Email:    email,
+		Tokens:   tokens,
+		File:     s.getFileInfo(),
+		FileName: s.LatestFile,
 	}
 
 	tmpl, err := template.ParseFiles(filepath.Join(s.TemplatesDir, "admin.html"))
