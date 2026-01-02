@@ -216,12 +216,8 @@
     <div class="card">
         <h2>Add New Download Token</h2>
         <form method="POST" action="/admin/token/create">
-            <input type="hidden" name="type" value="download">
             <div class="form-row">
                 <input type="text" name="name" placeholder="Token name (e.g. client-abc)" required>
-            </div>
-            <div class="form-row">
-                <input type="text" name="token" placeholder="Token value" required>
                 <button type="submit" class="btn-primary">Create Token</button>
             </div>
         </form>

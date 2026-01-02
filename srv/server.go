@@ -450,6 +450,16 @@ func (s *Server) HandleAdminUpdateToken(w http.ResponseWriter, r *http.Request) 
 	http.Redirect(w, r, "/admin", http.StatusSeeOther)
 }
 
+func generateToken() string {
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	b := make([]byte, 57)
+	rand.Read(b)
+	for i := range b {
+		b[i] = charset[int(b[i])%len(charset)]
+	}
+	return string(b)
+}
+
 func (s *Server) HandleAdminCreateToken(w http.ResponseWriter, r *http.Request) {
 	email := s.getSessionEmail(r)
 	if email == "" {
@@ -463,32 +473,25 @@ func (s *Server) HandleAdminCreateToken(w http.ResponseWriter, r *http.Request) 
 	}
 
 	name := r.FormValue("name")
-	tokenType := r.FormValue("type")
-	tokenValue := r.FormValue("token")
-
-	if name == "" || tokenType == "" || tokenValue == "" {
-		http.Error(w, "Missing fields", http.StatusBadRequest)
+	if name == "" {
+		http.Error(w, "Missing name", http.StatusBadRequest)
 		return
 	}
 
-	// Only allow creating download tokens
-	if tokenType != "download" {
-		http.Error(w, "Can only create download tokens", http.StatusForbidden)
-		return
-	}
+	tokenValue := generateToken()
 
 	q := dbgen.New(s.DB)
 	_, err := q.CreateToken(r.Context(), dbgen.CreateTokenParams{
 		Name:      name,
 		Token:     tokenValue,
-		TokenType: tokenType,
+		TokenType: "download",
 	})
 	if err != nil {
 		http.Error(w, "Failed to create token: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	slog.Info("Token created", "name", name, "type", tokenType, "by", email)
+	slog.Info("Token created", "name", name, "by", email)
 	http.Redirect(w, r, "/admin", http.StatusSeeOther)
 }
 
