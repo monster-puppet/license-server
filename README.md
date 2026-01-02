@@ -1,57 +1,82 @@
-# Go Shelley Template
+# License Server (Hub v2)
 
-This is a starter template for building Go web applications on exe.dev. It demonstrates end-to-end usage including HTTP handlers, authentication, database integration, and deployment.
+A simple file upload/download server with token-based authentication. Used to distribute files securely to authorized clients.
 
-Use this as a foundation to build your own service.
+## Endpoints
 
-## Building and Running
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/` | GET | Returns 404 |
+| `/download/latest` | GET | Download the latest file (mk.zip) |
+| `/upload/latest` | POST | Upload a new file to replace mk.zip |
 
-Build with `make build`, then run `./srv`. The server listens on port 8000 by default.
+## Authentication
 
-## Running as a systemd service
+All endpoints (except `/`) require an `Authorization` header with a valid token.
 
-To run the server as a systemd service:
-
+### Download
 ```bash
-# Install the service file
-sudo cp srv.service /etc/systemd/system/srv.service
+curl -H "Authorization: <DOWNLOAD_TOKEN>" https://license-server.exe.xyz:8000/download/latest -o mk.zip
+```
 
-# Reload systemd and enable the service
-sudo systemctl daemon-reload
-sudo systemctl enable srv.service
+### Upload
+```bash
+curl -X POST -H "Authorization: <UPLOAD_TOKEN>" -F "file=@myfile.zip" https://license-server.exe.xyz:8000/upload/latest
+```
 
-# Start the service
-sudo systemctl start srv
+## Environment Variables
 
-# Check status
-systemctl status srv
+| Variable | Description |
+|----------|-------------|
+| `UPLOAD_TOKEN` | Token required for upload endpoint |
+| `DOWNLOAD_TOKEN_PLAYBYPAY` | Download token for PlayByPay client |
+| `DOWNLOAD_TOKEN_ADMIN` | Download token for admin access |
 
-# View logs
+These are stored in `/home/exedev/hubv2/.env` (not committed to git).
+
+## File Storage
+
+Uploaded files are stored at `/home/exedev/hubv2/lib/mk.zip`.
+
+## Running
+
+### Development
+```bash
+export $(cat .env | xargs)
+go run ./cmd/srv -listen :8000
+```
+
+### Production
+
+The service runs via systemd:
+```bash
+sudo systemctl status srv
+sudo systemctl restart srv
 journalctl -u srv -f
 ```
 
-To restart after code changes:
+## Building
 
 ```bash
-make build
-sudo systemctl restart srv
+go build -o hubv2 ./cmd/srv
 ```
 
-## Authorization
+## Deployment
 
-exe.dev provides authorization headers and login/logout links
-that this template uses.
+1. Build the binary: `go build -o hubv2 ./cmd/srv`
+2. Copy service file: `sudo cp srv.service /etc/systemd/system/`
+3. Reload systemd: `sudo systemctl daemon-reload`
+4. Enable and start: `sudo systemctl enable srv && sudo systemctl start srv`
 
-When proxied through exed, requests will include `X-ExeDev-UserID` and
-`X-ExeDev-Email` if the user is authenticated via exe.dev.
+## Project Structure
 
-## Database
-
-This template uses sqlite (`db.sqlite3`). SQL queries are managed with sqlc.
-
-## Code layout
-
-- `cmd/srv`: main package (binary entrypoint)
-- `srv`: HTTP server logic (handlers)
-- `srv/templates`: Go HTML templates
-- `db`: SQLite open + migrations (001-base.sql)
+```
+/home/exedev/hubv2/
+├── cmd/srv/          # Main application entry point
+├── srv/              # Server implementation
+├── lib/              # File storage directory (not in git)
+├── .env              # Environment variables (not in git)
+├── srv.service       # Systemd service file
+├── hubv2             # Compiled binary (not in git)
+└── go.mod            # Go module file
+```
