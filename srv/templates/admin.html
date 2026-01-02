@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - License Server</title>
+    <title>Package Manager</title>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -423,7 +423,7 @@
     <div class="header">
         <div class="header-left">
             <img src="https://timeoff.monster-puppet.com/static/logo.png" alt="Monster Puppet" class="logo">
-            <h1>License Server</h1>
+            <h1>Package Manager</h1>
         </div>
         <div class="user-info">
             <span>{{.Email}}</span>
@@ -472,7 +472,7 @@
                     <td>
                         <div class="token-value">
                             <span class="token-text token-hidden" data-token="{{.Token}}">••••••••••••••••</span>
-                            <button type="button" class="btn-show" onclick="toggleToken(this)" title="Show/hide token">👁️</button>
+                            <button type="button" class="btn-show" onclick="toggleToken(this)" title="Show token">show</button>
                         </div>
                     </td>
                     <td style="white-space: nowrap;">
@@ -503,7 +503,7 @@
                 <div class="token-card-value">
                     <div class="token-value">
                         <span class="token-text token-hidden" data-token="{{.Token}}">••••••••••••••••</span>
-                        <button type="button" class="btn-show" onclick="toggleToken(this)" title="Show/hide token">👁️</button>
+                        <button type="button" class="btn-show" onclick="toggleToken(this)" title="Show token">show</button>
                     </div>
                 </div>
                 <div class="token-card-actions">
@@ -626,12 +626,12 @@
             if (isHidden) {
                 span.textContent = span.dataset.token;
                 span.classList.remove('token-hidden');
-                btn.textContent = '🙈';
+                btn.textContent = 'hide';
                 btn.title = 'Hide token';
             } else {
                 span.textContent = '••••••••••••••••';
                 span.classList.add('token-hidden');
-                btn.textContent = '👁️';
+                btn.textContent = 'show';
                 btn.title = 'Show token';
             }
         }
