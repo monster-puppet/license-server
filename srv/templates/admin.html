@@ -190,7 +190,7 @@
         </div>
         <div class="user-info">
             <span>{{.Email}}</span>
-            <a href="/admin/logout">Logout</a>
+            <a href="/logout">Logout</a>
         </div>
     </div>
 
@@ -230,7 +230,7 @@
                         <span class="badge badge-{{.TokenType}}">{{.TokenType}}</span>
                     </td>
                     <td>
-                        <form method="POST" action="/admin/token/update" style="margin:0">
+                        <form method="POST" action="/token/update" style="margin:0">
                             <input type="hidden" name="id" value="{{.ID}}">
                             <div class="token-input-group">
                                 <input type="text" name="token" value="{{.Token}}">
@@ -240,7 +240,7 @@
                     </td>
                     <td>
                         {{if eq .TokenType "download"}}
-                        <form method="POST" action="/admin/token/delete" style="margin:0" onsubmit="return confirm('Delete this token?')">
+                        <form method="POST" action="/token/delete" style="margin:0" onsubmit="return confirm('Delete this token?')">
                             <input type="hidden" name="id" value="{{.ID}}">
                             <button type="submit" class="btn-danger">Delete</button>
                         </form>
@@ -256,7 +256,7 @@
 
     <div class="card">
         <h2>Add New Download Token</h2>
-        <form method="POST" action="/admin/token/create">
+        <form method="POST" action="/token/create">
             <div class="form-row">
                 <input type="text" name="name" placeholder="Token name (e.g. client-abc)" required>
                 <button type="submit" class="btn-primary">Create Token</button>

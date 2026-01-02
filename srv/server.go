@@ -154,7 +154,7 @@ func (s *Server) getUploadToken() string {
 }
 
 func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "The requested resource could not be found", http.StatusNotFound)
+	s.HandleAdmin(w, r)
 }
 
 func (s *Server) HandleDownloadLatest(w http.ResponseWriter, r *http.Request) {
@@ -251,7 +251,7 @@ func (s *Server) HandleAdminLogin(w http.ResponseWriter, r *http.Request) {
 	authURL := fmt.Sprintf(
 		"https://accounts.google.com/o/oauth2/v2/auth?client_id=%s&redirect_uri=%s&response_type=code&scope=email&state=%s",
 		url.QueryEscape(s.GoogleClientID),
-		url.QueryEscape(s.BaseURL+"/admin/callback"),
+		url.QueryEscape(s.BaseURL+"/callback"),
 		url.QueryEscape(state),
 	)
 	http.Redirect(w, r, authURL, http.StatusTemporaryRedirect)
@@ -277,7 +277,7 @@ func (s *Server) HandleAdminCallback(w http.ResponseWriter, r *http.Request) {
 		"client_secret": {s.GoogleSecret},
 		"code":          {code},
 		"grant_type":    {"authorization_code"},
-		"redirect_uri":  {s.BaseURL + "/admin/callback"},
+		"redirect_uri":  {s.BaseURL + "/callback"},
 	})
 	if err != nil {
 		http.Error(w, "Failed to exchange code", http.StatusInternalServerError)
@@ -347,7 +347,7 @@ func (s *Server) HandleAdminCallback(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   86400,
 	})
 
-	http.Redirect(w, r, "/admin", http.StatusTemporaryRedirect)
+	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 }
 
 func (s *Server) HandleAdminLogout(w http.ResponseWriter, r *http.Request) {
@@ -366,7 +366,7 @@ func (s *Server) HandleAdminLogout(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   -1,
 	})
 
-	http.Redirect(w, r, "/admin/login", http.StatusTemporaryRedirect)
+	http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
 }
 
 func (s *Server) getSessionEmail(r *http.Request) string {
@@ -417,7 +417,7 @@ func (s *Server) getFileInfo() FileInfo {
 func (s *Server) HandleAdmin(w http.ResponseWriter, r *http.Request) {
 	email := s.getSessionEmail(r)
 	if email == "" {
-		http.Redirect(w, r, "/admin/login", http.StatusTemporaryRedirect)
+		http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
 		return
 	}
 
@@ -482,7 +482,7 @@ func (s *Server) HandleAdminUpdateToken(w http.ResponseWriter, r *http.Request) 
 	}
 
 	slog.Info("Token updated", "id", id, "by", email)
-	http.Redirect(w, r, "/admin", http.StatusSeeOther)
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func generateToken() string {
@@ -527,7 +527,7 @@ func (s *Server) HandleAdminCreateToken(w http.ResponseWriter, r *http.Request) 
 	}
 
 	slog.Info("Token created", "name", name, "by", email)
-	http.Redirect(w, r, "/admin", http.StatusSeeOther)
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func (s *Server) HandleAdminDeleteToken(w http.ResponseWriter, r *http.Request) {
@@ -567,7 +567,7 @@ func (s *Server) HandleAdminDeleteToken(w http.ResponseWriter, r *http.Request) 
 	}
 
 	slog.Info("Token deleted", "id", id, "by", email)
-	http.Redirect(w, r, "/admin", http.StatusSeeOther)
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func generateRandomString(n int) string {
@@ -583,13 +583,12 @@ func (s *Server) Serve(addr string) error {
 	mux.HandleFunc("POST /upload/latest", s.HandleUploadLatest)
 
 	// Admin routes
-	mux.HandleFunc("GET /admin", s.HandleAdmin)
-	mux.HandleFunc("GET /admin/login", s.HandleAdminLogin)
-	mux.HandleFunc("GET /admin/callback", s.HandleAdminCallback)
-	mux.HandleFunc("GET /admin/logout", s.HandleAdminLogout)
-	mux.HandleFunc("POST /admin/token/update", s.HandleAdminUpdateToken)
-	mux.HandleFunc("POST /admin/token/create", s.HandleAdminCreateToken)
-	mux.HandleFunc("POST /admin/token/delete", s.HandleAdminDeleteToken)
+	mux.HandleFunc("GET /login", s.HandleAdminLogin)
+	mux.HandleFunc("GET /callback", s.HandleAdminCallback)
+	mux.HandleFunc("GET /logout", s.HandleAdminLogout)
+	mux.HandleFunc("POST /token/update", s.HandleAdminUpdateToken)
+	mux.HandleFunc("POST /token/create", s.HandleAdminCreateToken)
+	mux.HandleFunc("POST /token/delete", s.HandleAdminDeleteToken)
 
 	slog.Info("starting server", "addr", addr)
 	return http.ListenAndServe(addr, mux)
