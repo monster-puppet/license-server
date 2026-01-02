@@ -147,10 +147,14 @@
                         </form>
                     </td>
                     <td>
+                        {{if eq .TokenType "download"}}
                         <form method="POST" action="/admin/token/delete" style="margin:0" onsubmit="return confirm('Delete this token?')">
                             <input type="hidden" name="id" value="{{.ID}}">
                             <button type="submit" class="btn-danger">Delete</button>
                         </form>
+                        {{else}}
+                        <span style="color:#999; font-size:12px">Protected</span>
+                        {{end}}
                     </td>
                 </tr>
                 {{end}}
@@ -159,14 +163,11 @@
     </div>
 
     <div class="card">
-        <h2>Add New Token</h2>
+        <h2>Add New Download Token</h2>
         <form method="POST" action="/admin/token/create">
+            <input type="hidden" name="type" value="download">
             <div class="form-row">
                 <input type="text" name="name" placeholder="Token name (e.g. client-abc)" required>
-                <select name="type" required>
-                    <option value="download">Download</option>
-                    <option value="upload">Upload</option>
-                </select>
             </div>
             <div class="form-row">
                 <input type="text" name="token" placeholder="Token value" required>

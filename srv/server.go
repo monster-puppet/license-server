@@ -471,6 +471,12 @@ func (s *Server) HandleAdminCreateToken(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// Only allow creating download tokens
+	if tokenType != "download" {
+		http.Error(w, "Can only create download tokens", http.StatusForbidden)
+		return
+	}
+
 	q := dbgen.New(s.DB)
 	_, err := q.CreateToken(r.Context(), dbgen.CreateTokenParams{
 		Name:      name,
@@ -506,6 +512,16 @@ func (s *Server) HandleAdminDeleteToken(w http.ResponseWriter, r *http.Request) 
 	}
 
 	q := dbgen.New(s.DB)
+
+	// Check if it's an upload token - prevent deletion
+	tokens, _ := q.GetAllTokens(r.Context())
+	for _, t := range tokens {
+		if t.ID == id && t.TokenType == "upload" {
+			http.Error(w, "Cannot delete upload token", http.StatusForbidden)
+			return
+		}
+	}
+
 	err = q.DeleteToken(r.Context(), id)
 	if err != nil {
 		http.Error(w, "Failed to delete token", http.StatusInternalServerError)

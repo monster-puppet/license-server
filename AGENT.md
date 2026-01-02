@@ -2,6 +2,16 @@
 
 This is a file distribution server ported from PythonAnywhere Flask to Go.
 
+## IMPORTANT: Always push to GitHub after changes
+
+After making and verifying any code changes:
+```bash
+cd /home/exedev/hubv2
+git add <changed files>
+git commit -m "Description of changes"
+git push
+```
+
 ## Quick Reference
 
 - **Service name:** `srv`
