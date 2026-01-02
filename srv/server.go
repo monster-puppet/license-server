@@ -466,7 +466,7 @@ func (s *Server) HandleAdmin(w http.ResponseWriter, r *http.Request) {
 	tmpl.Execute(w, data)
 }
 
-func (s *Server) HandleAdminUpdateToken(w http.ResponseWriter, r *http.Request) {
+func (s *Server) HandleAdminRegenerateToken(w http.ResponseWriter, r *http.Request) {
 	email := s.getSessionEmail(r)
 	if email == "" {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -479,13 +479,13 @@ func (s *Server) HandleAdminUpdateToken(w http.ResponseWriter, r *http.Request) 
 	}
 
 	idStr := r.FormValue("id")
-	newToken := r.FormValue("token")
-
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		http.Error(w, "Invalid ID", http.StatusBadRequest)
 		return
 	}
+
+	newToken := generateToken()
 
 	q := dbgen.New(s.DB)
 	err = q.UpdateToken(r.Context(), dbgen.UpdateTokenParams{
@@ -493,11 +493,11 @@ func (s *Server) HandleAdminUpdateToken(w http.ResponseWriter, r *http.Request) 
 		Token: newToken,
 	})
 	if err != nil {
-		http.Error(w, "Failed to update token", http.StatusInternalServerError)
+		http.Error(w, "Failed to regenerate token", http.StatusInternalServerError)
 		return
 	}
 
-	slog.Info("Token updated", "id", id, "by", email)
+	slog.Info("Token regenerated", "id", id, "by", email)
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
@@ -854,7 +854,7 @@ func (s *Server) Serve(addr string) error {
 	mux.HandleFunc("GET /login", s.HandleAdminLogin)
 	mux.HandleFunc("GET /callback", s.HandleAdminCallback)
 	mux.HandleFunc("GET /logout", s.HandleAdminLogout)
-	mux.HandleFunc("POST /token/update", s.HandleAdminUpdateToken)
+	mux.HandleFunc("POST /token/regenerate", s.HandleAdminRegenerateToken)
 	mux.HandleFunc("POST /token/create", s.HandleAdminCreateToken)
 	mux.HandleFunc("POST /token/delete", s.HandleAdminDeleteToken)
 
