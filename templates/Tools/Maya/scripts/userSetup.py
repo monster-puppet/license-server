@@ -40,4 +40,4 @@ def _deferred_init():
 
     maya_startup()
 
-cmds.evalDeferred(_deferred_init)
+cmds.evalDeferred("_deferred_init()")
