@@ -807,7 +807,7 @@ func (s *Server) generatePackage(tokenName, tokenValue string, mayaVersions []st
 			// Replace the version on line 4
 			modified = strings.Replace(modified, `set "version=2024"`, `set "version=`+defaultMayaVersion+`"`, 1)
 			// Replace the requirements.txt path to use local path
-			modified = strings.Replace(modified, `"R:\Tools\Maya\requirements.txt"`, `"!maya_root_path!\requirements.txt"`, 1)
+			modified = strings.Replace(modified, `"R:\Tools\Maya\requirements.txt"`, `"%maya_root_path%\requirements.txt"`, 1)
 			_, err = writer.Write([]byte(modified))
 			return err
 
