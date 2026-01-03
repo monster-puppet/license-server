@@ -701,7 +701,7 @@ func (s *Server) HandleAdminCreateToken(w http.ResponseWriter, r *http.Request) 
 	}
 
 	slog.Info("Token created", "name", name, "maya_versions", mayaVersionsStr, "by", email)
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	http.Redirect(w, r, "/created?name="+url.QueryEscape(name), http.StatusSeeOther)
 }
 
 func (s *Server) HandleAdminDeleteToken(w http.ResponseWriter, r *http.Request) {
@@ -1055,6 +1055,39 @@ func (s *Server) HandleCreatePage(w http.ResponseWriter, r *http.Request) {
 	tmpl.Execute(w, data)
 }
 
+func (s *Server) HandleCreatedPage(w http.ResponseWriter, r *http.Request) {
+	session := s.getSession(r)
+	if session == nil {
+		http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
+		return
+	}
+
+	name := r.URL.Query().Get("name")
+	if name == "" {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
+	data := struct {
+		Email   string
+		Picture string
+		Name    string
+	}{
+		Email:   session.Email,
+		Picture: session.Picture,
+		Name:    name,
+	}
+
+	tmpl, err := template.ParseFiles(filepath.Join(s.TemplatesDir, "created.html"))
+	if err != nil {
+		http.Error(w, "Failed to load template", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	tmpl.Execute(w, data)
+}
+
 func (s *Server) HandleUploadTemplate(w http.ResponseWriter, r *http.Request) {
 	token := r.Header.Get("Authorization")
 	if token != s.getUploadToken() {
@@ -1115,6 +1148,7 @@ func (s *Server) Serve(addr string) error {
 	mux.HandleFunc("GET /downloads", s.HandleDownloadHistory)
 	mux.HandleFunc("GET /download/history", s.HandleDownloadHistoryAPI)
 	mux.HandleFunc("GET /create", s.HandleCreatePage)
+	mux.HandleFunc("GET /created", s.HandleCreatedPage)
 	mux.HandleFunc("GET /package/{name}", s.HandlePackageDownload)
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir(filepath.Join(s.TemplatesDir, "..", "static")))))
 
