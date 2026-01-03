@@ -39,13 +39,8 @@ def run_update():
     # Get Maya version for version-specific download
     maya_version = get_maya_version()
     
-    # Build version-specific filename for local cache
-    if maya_version:
-        zip_filename = f"mk_{maya_version}.zip"
-    else:
-        zip_filename = "latest.zip"
-    
-    local_zip_path = os.path.join(bin_path, zip_filename)
+    # Local cache file is always called "latest" (no extension)
+    local_zip_path = os.path.join(bin_path, "latest")
     token_file_path = os.path.join(bin_path, "token")
 
     if not os.path.exists(token_file_path):
