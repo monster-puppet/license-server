@@ -1404,6 +1404,148 @@ func (s *Server) HandleTemplateFileSave(w http.ResponseWriter, r *http.Request) 
 	json.NewEncoder(w).Encode(map[string]string{"message": "File saved successfully"})
 }
 
+func (s *Server) HandleTemplateFileDelete(w http.ResponseWriter, r *http.Request) {
+	email := s.getSessionEmail(r)
+	if email == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var req struct {
+		Path string `json:"path"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid request"})
+		return
+	}
+
+	// Security: prevent path traversal
+	if strings.Contains(req.Path, "..") {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid path"})
+		return
+	}
+
+	templateDir := "/home/exedev/hubv2/templates"
+	fullPath := filepath.Join(templateDir, req.Path)
+
+	// Ensure path is within template dir
+	if !strings.HasPrefix(fullPath, templateDir) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid path"})
+		return
+	}
+
+	// Check if file exists
+	info, err := os.Stat(fullPath)
+	if os.IsNotExist(err) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(map[string]string{"error": "File not found"})
+		return
+	}
+
+	// Don't allow deleting directories
+	if info.IsDir() {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Cannot delete directories"})
+		return
+	}
+
+	if err := os.Remove(fullPath); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to delete file"})
+		return
+	}
+
+	slog.Info("Template file deleted", "path", req.Path, "by", email)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"message": "File deleted successfully"})
+}
+
+func (s *Server) HandleTemplateFileCreate(w http.ResponseWriter, r *http.Request) {
+	email := s.getSessionEmail(r)
+	if email == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var req struct {
+		Path string `json:"path"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid request"})
+		return
+	}
+
+	// Security: prevent path traversal
+	if strings.Contains(req.Path, "..") {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid path"})
+		return
+	}
+
+	// Validate filename has an extension
+	baseName := filepath.Base(req.Path)
+	if !strings.Contains(baseName, ".") {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Filename must have an extension"})
+		return
+	}
+
+	templateDir := "/home/exedev/hubv2/templates"
+	fullPath := filepath.Join(templateDir, req.Path)
+
+	// Ensure path is within template dir
+	if !strings.HasPrefix(fullPath, templateDir) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid path"})
+		return
+	}
+
+	// Check if file already exists
+	if _, err := os.Stat(fullPath); !os.IsNotExist(err) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		json.NewEncoder(w).Encode(map[string]string{"error": "File already exists"})
+		return
+	}
+
+	// Ensure parent directory exists
+	parentDir := filepath.Dir(fullPath)
+	if _, err := os.Stat(parentDir); os.IsNotExist(err) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Parent directory does not exist"})
+		return
+	}
+
+	// Create empty file
+	if err := os.WriteFile(fullPath, []byte{}, 0644); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to create file"})
+		return
+	}
+
+	slog.Info("Template file created", "path", req.Path, "by", email)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"message": "File created successfully"})
+}
+
 func (s *Server) Serve(addr string) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", s.HandleRoot)
@@ -1424,6 +1566,8 @@ func (s *Server) Serve(addr string) error {
 	mux.HandleFunc("GET /api/template/files", s.HandleTemplatesAPI)
 	mux.HandleFunc("GET /api/template/file", s.HandleTemplateFileRead)
 	mux.HandleFunc("POST /api/template/file", s.HandleTemplateFileSave)
+	mux.HandleFunc("DELETE /api/template/file", s.HandleTemplateFileDelete)
+	mux.HandleFunc("POST /api/template/file/create", s.HandleTemplateFileCreate)
 
 	// Admin routes
 	mux.HandleFunc("GET /login", s.HandleAdminLogin)

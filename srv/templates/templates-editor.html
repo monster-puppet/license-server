@@ -307,6 +307,106 @@
             stroke-width: 1;
             margin-bottom: 15px;
         }
+        /* Context menu */
+        .context-menu {
+            position: fixed;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 6px 0;
+            min-width: 150px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            z-index: 1000;
+            display: none;
+        }
+        .context-menu.active {
+            display: block;
+        }
+        .context-menu-item {
+            padding: 8px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            color: #e0e0e0;
+        }
+        .context-menu-item:hover {
+            background: #252525;
+        }
+        .context-menu-item.danger {
+            color: #e74c3c;
+        }
+        .context-menu-item.danger:hover {
+            background: #3d1f1f;
+        }
+        .context-menu-item svg {
+            width: 14px;
+            height: 14px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+        }
+        /* New file modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1001;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 24px;
+            min-width: 400px;
+            max-width: 90%;
+        }
+        .modal h3 {
+            margin: 0 0 20px 0;
+            color: #fff;
+            font-size: 16px;
+        }
+        .modal input {
+            width: 100%;
+            padding: 10px 12px;
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 4px;
+            color: #e0e0e0;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .modal input:focus {
+            outline: none;
+            border-color: #e74c3c;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        .modal-error {
+            color: #e74c3c;
+            font-size: 13px;
+            margin-bottom: 15px;
+        }
+        .sidebar-actions {
+            padding: 10px 15px;
+            border-bottom: 1px solid #252525;
+        }
+        .btn-new-file {
+            width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -346,6 +446,12 @@
                 <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
                 Template Files
             </div>
+            <div class="sidebar-actions">
+                <button class="btn btn-secondary btn-new-file" onclick="showNewFileModal()">
+                    <svg viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
+                    New File
+                </button>
+            </div>
             <div class="file-tree" id="fileTree">
                 <div class="loading active">Loading...</div>
             </div>
@@ -382,10 +488,34 @@
         </div>
     </div>
 
+    <!-- Context Menu -->
+    <div class="context-menu" id="contextMenu">
+        <div class="context-menu-item danger" onclick="deleteSelectedFile()">
+            <svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+            Delete
+        </div>
+    </div>
+
+    <!-- New File Modal -->
+    <div class="modal-overlay" id="newFileModal">
+        <div class="modal">
+            <h3>Create New File</h3>
+            <div class="modal-error" id="newFileError" style="display: none;"></div>
+            <input type="text" id="newFileName" placeholder="filename.ext (e.g., script.py)" autocomplete="off">
+            <div style="font-size: 12px; color: #888; margin-bottom: 15px;" id="newFilePath"></div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="hideNewFileModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="createNewFile()">Create</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let currentFile = null;
         let originalContent = '';
         let isModified = false;
+        let contextMenuTarget = null;
+        let currentFolder = '';
 
         const editor = document.getElementById('editor');
         const placeholder = document.getElementById('placeholder');
@@ -394,9 +524,134 @@
         const editorPath = document.getElementById('editorPath');
         const editorStatus = document.getElementById('editorStatus');
         const saveBtn = document.getElementById('saveBtn');
+        const contextMenu = document.getElementById('contextMenu');
+        const newFileModal = document.getElementById('newFileModal');
+        const newFileName = document.getElementById('newFileName');
+        const newFileError = document.getElementById('newFileError');
+        const newFilePath = document.getElementById('newFilePath');
 
         // Load initial file tree
         loadFileTree();
+
+        // Hide context menu on click elsewhere
+        document.addEventListener('click', () => {
+            contextMenu.classList.remove('active');
+        });
+
+        // Handle right-click on file tree
+        document.getElementById('fileTree').addEventListener('contextmenu', (e) => {
+            const treeItem = e.target.closest('.tree-item');
+            if (treeItem && treeItem.dataset.isDir !== 'true') {
+                e.preventDefault();
+                contextMenuTarget = treeItem.dataset.path;
+                contextMenu.style.left = e.clientX + 'px';
+                contextMenu.style.top = e.clientY + 'px';
+                contextMenu.classList.add('active');
+            }
+        });
+
+        async function deleteSelectedFile() {
+            if (!contextMenuTarget) return;
+            
+            const path = contextMenuTarget;
+            if (!confirm(`Are you sure you want to delete "${path}"?`)) {
+                return;
+            }
+
+            try {
+                const resp = await fetch('/api/template/file', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path })
+                });
+
+                if (!resp.ok) {
+                    const data = await resp.json();
+                    throw new Error(data.error || 'Failed to delete');
+                }
+
+                // If the deleted file was open, clear the editor
+                if (currentFile === path) {
+                    currentFile = null;
+                    originalContent = '';
+                    isModified = false;
+                    editor.style.display = 'none';
+                    placeholder.style.display = 'flex';
+                    editorHeader.style.display = 'none';
+                }
+
+                // Reload file tree
+                await loadFileTree();
+            } catch (err) {
+                alert('Error deleting file: ' + err.message);
+            }
+        }
+
+        function showNewFileModal() {
+            newFileName.value = '';
+            newFileError.style.display = 'none';
+            newFilePath.textContent = 'Will be created in: ' + (currentFolder || '(root)');
+            newFileModal.classList.add('active');
+            newFileName.focus();
+        }
+
+        function hideNewFileModal() {
+            newFileModal.classList.remove('active');
+        }
+
+        async function createNewFile() {
+            const filename = newFileName.value.trim();
+            
+            if (!filename) {
+                newFileError.textContent = 'Please enter a filename';
+                newFileError.style.display = 'block';
+                return;
+            }
+
+            if (!filename.includes('.')) {
+                newFileError.textContent = 'Filename must have an extension (e.g., .py, .txt)';
+                newFileError.style.display = 'block';
+                return;
+            }
+
+            if (filename.includes('/') || filename.includes('\\')) {
+                newFileError.textContent = 'Filename cannot contain path separators';
+                newFileError.style.display = 'block';
+                return;
+            }
+
+            const fullPath = currentFolder ? currentFolder + '/' + filename : filename;
+
+            try {
+                const resp = await fetch('/api/template/file/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path: fullPath })
+                });
+
+                if (!resp.ok) {
+                    const data = await resp.json();
+                    throw new Error(data.error || 'Failed to create file');
+                }
+
+                hideNewFileModal();
+                await loadFileTree();
+                // Open the new file
+                loadFile(fullPath);
+            } catch (err) {
+                newFileError.textContent = err.message;
+                newFileError.style.display = 'block';
+            }
+        }
+
+        // Handle Enter key in new file modal
+        newFileName.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                createNewFile();
+            } else if (e.key === 'Escape') {
+                hideNewFileModal();
+            }
+        });
 
         async function loadFileTree() {
             const tree = document.getElementById('fileTree');
@@ -445,6 +700,8 @@
                 if (children) {
                     children.classList.toggle('expanded');
                 }
+                // Set current folder
+                currentFolder = path;
             } else {
                 // Check for unsaved changes
                 if (isModified) {
@@ -455,6 +712,9 @@
                 // Select file
                 document.querySelectorAll('.tree-item.selected').forEach(el => el.classList.remove('selected'));
                 el.classList.add('selected');
+                // Set current folder to file's parent directory
+                const lastSlash = path.lastIndexOf('/');
+                currentFolder = lastSlash > 0 ? path.substring(0, lastSlash) : '';
                 loadFile(path);
             }
         }
