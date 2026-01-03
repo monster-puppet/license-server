@@ -1,0 +1,46 @@
+global proc shelf_PBP_Rigging () {
+    global string $gBuffStr;
+    global string $gBuffStr0;
+    global string $gBuffStr1;
+
+    // Auto-initialize module
+    python("import userSetup");
+
+
+    shelfButton
+        -enableCommandRepeat 1
+        -flexibleWidthType 3
+        -flexibleWidthValue 32
+        -enable 1
+        -width 35
+        -height 34
+        -manage 1
+        -visible 1
+        -preventOverride 0
+        -annotation "Test Tool" 
+        -enableBackground 0
+        -backgroundColor 0 0 0 
+        -highlightColor 0.321569 0.521569 0.65098 
+        -align "center" 
+        -label "import mk.maya.lib.ui.monster_puppet_ui as lib_ui\nimport pbp.app..." 
+        -labelOffset 0
+        -rotation 0
+        -flipX 0
+        -flipY 0
+        -useAlpha 1
+        -font "plainLabelFont" 
+        -imageOverlayLabel "Test" 
+        -overlayLabelColor 0.8 0.8 0.8 
+        -overlayLabelBackColor 0 0 0 0.5 
+        -image "a_standard_surface.png" 
+        -image1 "a_standard_surface.png" 
+        -style "iconOnly" 
+        -marginWidth 0
+        -marginHeight 1
+        -command "import mk.maya.lib.ui.monster_puppet_ui as lib_ui\nimport pbp.app.helloworld.tool as tool\nimport importlib\nimportlib.reload(tool)\nlib_ui.run_and_show(tool.TestUI)" 
+        -sourceType "python" 
+        -commandRepeatable 1
+        -flat 1
+    ;
+
+} 

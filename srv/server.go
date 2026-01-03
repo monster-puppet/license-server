@@ -737,10 +737,7 @@ func (s *Server) generatePackage(tokenName, tokenValue string, mayaVersions []st
 			relPath = strings.Replace(relPath, "shelf_PBP_", "shelf_"+tokenName+"_", 1)
 		}
 
-		// Handle plugin rename (pbp_init.py -> {tokenName}_init.py)
-		if strings.HasSuffix(relPath, "pbp_init.py") {
-			relPath = strings.Replace(relPath, "pbp_init.py", tokenName+"_init.py", 1)
-		}
+
 
 		if info.IsDir() {
 			if relPath != "." {
@@ -802,16 +799,6 @@ func (s *Server) generatePackage(tokenName, tokenValue string, mayaVersions []st
 			_, err = writer.Write([]byte(modified))
 			return err
 
-		case baseName == "pbp_init.py":
-			// Replace PBP references in init plugin
-			content, err := os.ReadFile(path)
-			if err != nil {
-				return err
-			}
-			modified := strings.ReplaceAll(string(content), "PBP", strings.ToUpper(tokenName))
-			_, err = writer.Write([]byte(modified))
-			return err
-
 		case baseName == "Launch Maya.bat":
 			// Modify Launch Maya.bat with default Maya version and local requirements path
 			content, err := os.ReadFile(path)
@@ -852,7 +839,7 @@ func (s *Server) generatePackage(tokenName, tokenValue string, mayaVersions []st
 func (s *Server) generateModContent(tokenName string, mayaVersions []string) string {
 	var blocks []string
 	for _, version := range mayaVersions {
-		block := fmt.Sprintf("+ MAYAVERSION:%s %s_module 1.0.0 .\r\nscripts: scripts\r\nplug-ins: plug-ins\r\nMAYA_SHELF_PATH+:=shelves\r\nMAYA_NO_WARNING_FOR_MISSING_DEFAULT_RENDERER=1\r\nMAYA_CM_DISABLE_ERROR_POPUPS=1\r\nMAYA_PLUG_IN_AUTOLOAD+:=%s_init.py", version, tokenName, tokenName)
+		block := fmt.Sprintf("+ MAYAVERSION:%s %s_module 1.0.0 .\r\nscripts: scripts\r\nMAYA_SHELF_PATH+:=shelves\r\nMAYA_NO_WARNING_FOR_MISSING_DEFAULT_RENDERER=1\r\nMAYA_CM_DISABLE_ERROR_POPUPS=1", version, tokenName)
 		blocks = append(blocks, block)
 	}
 	return strings.Join(blocks, "\r\n\r\n") + "\r\n"
