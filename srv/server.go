@@ -1419,10 +1419,10 @@ func (s *Server) Serve(addr string) error {
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir(filepath.Join(s.TemplatesDir, "..", "static")))))
 
 	// Template editor routes
-	mux.HandleFunc("GET /templates", s.HandleTemplatesPage)
-	mux.HandleFunc("GET /api/templates/files", s.HandleTemplatesAPI)
-	mux.HandleFunc("GET /api/templates/file", s.HandleTemplateFileRead)
-	mux.HandleFunc("POST /api/templates/file", s.HandleTemplateFileSave)
+	mux.HandleFunc("GET /template", s.HandleTemplatesPage)
+	mux.HandleFunc("GET /api/template/files", s.HandleTemplatesAPI)
+	mux.HandleFunc("GET /api/template/file", s.HandleTemplateFileRead)
+	mux.HandleFunc("POST /api/template/file", s.HandleTemplateFileSave)
 
 	// Admin routes
 	mux.HandleFunc("GET /login", s.HandleAdminLogin)

@@ -333,7 +333,7 @@
             <svg viewBox="0 0 24 24"><path d="M12 4v12m0 0l-4-4m4 4l4-4M4 17v2a1 1 0 001 1h14a1 1 0 001-1v-2"/></svg>
             Downloads
         </a>
-        <a href="/templates" class="nav-link active">
+        <a href="/template" class="nav-link active">
             <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
             Templates
         </a>
@@ -402,7 +402,7 @@
             tree.innerHTML = '<div class="loading active">Loading...</div>';
 
             try {
-                const resp = await fetch('/api/templates/files');
+                const resp = await fetch('/api/template/files');
                 if (!resp.ok) throw new Error('Failed to load');
                 const data = await resp.json();
                 tree.innerHTML = renderTree(data.children || [], 0);
@@ -469,7 +469,7 @@
             editorStatus.className = 'status';
 
             try {
-                const resp = await fetch('/api/templates/file?path=' + encodeURIComponent(path));
+                const resp = await fetch('/api/template/file?path=' + encodeURIComponent(path));
                 if (!resp.ok) {
                     const data = await resp.json();
                     throw new Error(data.error || 'Failed to load');
@@ -512,7 +512,7 @@
             saveBtn.disabled = true;
 
             try {
-                const resp = await fetch('/api/templates/file', {
+                const resp = await fetch('/api/template/file', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
