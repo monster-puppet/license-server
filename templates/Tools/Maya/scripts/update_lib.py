@@ -1,24 +1,24 @@
-import os
-import urllib.request
-import hashlib
-import shutil
-import socket
-import zipfile
-import maya.cmds as cmds
-import settings
-
-URL_LATEST = "https://hub.monster-puppet.com/download/latest"
-
-def calculate_checksum(file_path):
-    if not os.path.exists(file_path):
-        return None
-    hasher = hashlib.md5()
-    with open(file_path, "rb") as f:
-        for chunk in iter(lambda: f.read(4096), b""):
-            hasher.update(chunk)
-    return hasher.hexdigest()
-
-
+import os
+import urllib.request
+import hashlib
+import shutil
+import socket
+import zipfile
+import maya.cmds as cmds
+import settings
+
+URL_LATEST = "https://hub.monster-puppet.com/download/latest"
+
+def calculate_checksum(file_path):
+    if not os.path.exists(file_path):
+        return None
+    hasher = hashlib.md5()
+    with open(file_path, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hasher.update(chunk)
+    return hasher.hexdigest()
+
+
 def run_update():    
     bin_path = os.path.normpath(os.path.join(settings.paths.root, "bin"))
     scripts_path = os.path.normpath(os.path.join(settings.paths.root, "scripts"))
@@ -76,9 +76,9 @@ def run_update():
                 zip_ref.extractall(scripts_path)
 
             print(f"[MONSTER PUPPET] Successfully unpacked update")
-    except urllib.error.HTTPError as e:
-        print(f"[MONSTER PUPPET] Error {e.code}: {e.read().decode('utf-8')}")
-    except socket.timeout:
-        print("[MONSTER PUPPET] Error: The request timed out after 5 seconds.")
-    except Exception as e:
-        print(f"[MONSTER PUPPET] Unexpected error: {e}")
+    except urllib.error.HTTPError as e:
+        print(f"[MONSTER PUPPET] Error {e.code}: {e.read().decode('utf-8')}")
+    except socket.timeout:
+        print("[MONSTER PUPPET] Error: The request timed out after 5 seconds.")
+    except Exception as e:
+        print(f"[MONSTER PUPPET] Unexpected error: {e}")
