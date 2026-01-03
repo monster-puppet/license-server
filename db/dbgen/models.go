@@ -39,6 +39,7 @@ type Token struct {
 	MayaVersions       *string   `json:"maya_versions"`
 	DefaultMayaVersion *string   `json:"default_maya_version"`
 	SceneSettings      *string   `json:"scene_settings"`
+	Requirements       *string   `json:"requirements"`
 }
 
 type UploadHistory struct {

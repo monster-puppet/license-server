@@ -41,7 +41,7 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) er
 }
 
 const createToken = `-- name: CreateToken :one
-INSERT INTO tokens (name, token, token_type, maya_versions, default_maya_version, scene_settings) VALUES (?, ?, ?, ?, ?, ?) RETURNING id, name, token, token_type, maya_versions, default_maya_version, scene_settings, created_at, updated_at
+INSERT INTO tokens (name, token, token_type, maya_versions, default_maya_version, scene_settings, requirements) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id, name, token, token_type, maya_versions, default_maya_version, scene_settings, requirements, created_at, updated_at
 `
 
 type CreateTokenParams struct {
@@ -51,6 +51,7 @@ type CreateTokenParams struct {
 	MayaVersions       *string `json:"maya_versions"`
 	DefaultMayaVersion *string `json:"default_maya_version"`
 	SceneSettings      *string `json:"scene_settings"`
+	Requirements       *string `json:"requirements"`
 }
 
 type CreateTokenRow struct {
@@ -61,6 +62,7 @@ type CreateTokenRow struct {
 	MayaVersions       *string   `json:"maya_versions"`
 	DefaultMayaVersion *string   `json:"default_maya_version"`
 	SceneSettings      *string   `json:"scene_settings"`
+	Requirements       *string   `json:"requirements"`
 	CreatedAt          time.Time `json:"created_at"`
 	UpdatedAt          time.Time `json:"updated_at"`
 }
@@ -73,6 +75,7 @@ func (q *Queries) CreateToken(ctx context.Context, arg CreateTokenParams) (Creat
 		arg.MayaVersions,
 		arg.DefaultMayaVersion,
 		arg.SceneSettings,
+		arg.Requirements,
 	)
 	var i CreateTokenRow
 	err := row.Scan(
@@ -83,6 +86,7 @@ func (q *Queries) CreateToken(ctx context.Context, arg CreateTokenParams) (Creat
 		&i.MayaVersions,
 		&i.DefaultMayaVersion,
 		&i.SceneSettings,
+		&i.Requirements,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -108,7 +112,7 @@ func (q *Queries) DeleteToken(ctx context.Context, id int64) error {
 }
 
 const getAllTokens = `-- name: GetAllTokens :many
-SELECT id, name, token, token_type, maya_versions, default_maya_version, scene_settings, created_at, updated_at FROM tokens ORDER BY token_type, name
+SELECT id, name, token, token_type, maya_versions, default_maya_version, scene_settings, requirements, created_at, updated_at FROM tokens ORDER BY token_type, name
 `
 
 type GetAllTokensRow struct {
@@ -119,6 +123,7 @@ type GetAllTokensRow struct {
 	MayaVersions       *string   `json:"maya_versions"`
 	DefaultMayaVersion *string   `json:"default_maya_version"`
 	SceneSettings      *string   `json:"scene_settings"`
+	Requirements       *string   `json:"requirements"`
 	CreatedAt          time.Time `json:"created_at"`
 	UpdatedAt          time.Time `json:"updated_at"`
 }
@@ -140,6 +145,7 @@ func (q *Queries) GetAllTokens(ctx context.Context) ([]GetAllTokensRow, error) {
 			&i.MayaVersions,
 			&i.DefaultMayaVersion,
 			&i.SceneSettings,
+			&i.Requirements,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -209,7 +215,7 @@ func (q *Queries) GetSession(ctx context.Context, id string) (GetSessionRow, err
 }
 
 const getTokenByName = `-- name: GetTokenByName :one
-SELECT id, name, token, token_type, maya_versions, default_maya_version, scene_settings, created_at, updated_at FROM tokens WHERE name = ?
+SELECT id, name, token, token_type, maya_versions, default_maya_version, scene_settings, requirements, created_at, updated_at FROM tokens WHERE name = ?
 `
 
 type GetTokenByNameRow struct {
@@ -220,6 +226,7 @@ type GetTokenByNameRow struct {
 	MayaVersions       *string   `json:"maya_versions"`
 	DefaultMayaVersion *string   `json:"default_maya_version"`
 	SceneSettings      *string   `json:"scene_settings"`
+	Requirements       *string   `json:"requirements"`
 	CreatedAt          time.Time `json:"created_at"`
 	UpdatedAt          time.Time `json:"updated_at"`
 }
@@ -235,6 +242,7 @@ func (q *Queries) GetTokenByName(ctx context.Context, name string) (GetTokenByNa
 		&i.MayaVersions,
 		&i.DefaultMayaVersion,
 		&i.SceneSettings,
+		&i.Requirements,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

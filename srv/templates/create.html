@@ -183,6 +183,26 @@
             outline: none;
             border-color: #e74c3c;
         }
+        .requirements-input {
+            width: 100%;
+            min-height: 100px;
+            padding: 10px;
+            border: 1px solid #333;
+            border-radius: 4px;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            font-family: monospace;
+            font-size: 13px;
+            resize: vertical;
+            margin-top: 8px;
+        }
+        .requirements-input:focus {
+            outline: none;
+            border-color: #e74c3c;
+        }
+        .requirements-input::placeholder {
+            color: #555;
+        }
         @media (max-width: 600px) {
             body {
                 padding: 15px;
@@ -294,6 +314,14 @@
                         </select>
                     </div>
                 </div>
+            </div>
+            <div class="maya-versions">
+                <label>Python Requirements (pip packages):</label>
+                <textarea name="requirements" class="requirements-input" placeholder="One package per line, e.g.:
+pymel
+PySide2
+numpy">pymel</textarea>
+                <div style="font-size: 11px; color: #666; margin-top: 6px;">These packages will be installed via pip when the client runs Launch Maya.bat</div>
             </div>
             <div class="form-row" style="margin-top: 15px;">
                 <button type="submit" class="btn-primary">Create Package</button>

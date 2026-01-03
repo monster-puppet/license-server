@@ -700,6 +700,12 @@ func (s *Server) HandleAdminCreateToken(w http.ResponseWriter, r *http.Request) 
 	}
 	sceneSettings := fmt.Sprintf(`{"axis": "%s", "fps": "%s", "unit": "%s"}`, sceneAxis, sceneFps, sceneUnit)
 
+	// Requirements (pip packages)
+	requirements := r.FormValue("requirements")
+	if requirements == "" {
+		requirements = "pymel"
+	}
+
 	tokenValue := generateToken()
 
 	q := dbgen.New(s.DB)
@@ -710,6 +716,7 @@ func (s *Server) HandleAdminCreateToken(w http.ResponseWriter, r *http.Request) 
 		MayaVersions:       &mayaVersionsStr,
 		DefaultMayaVersion: &defaultMayaVersion,
 		SceneSettings:      &sceneSettings,
+		Requirements:       &requirements,
 	})
 	if err != nil {
 		http.Error(w, "Failed to create token: "+err.Error(), http.StatusInternalServerError)
@@ -834,8 +841,13 @@ func (s *Server) HandlePackageDownload(w http.ResponseWriter, r *http.Request) {
 		sceneSettings = *token.SceneSettings
 	}
 
+	requirements := "pymel"
+	if token.Requirements != nil && *token.Requirements != "" {
+		requirements = *token.Requirements
+	}
+
 	// Generate the package
-	zipData, err := s.generatePackage(tokenName, token.Token, mayaVersions, defaultMayaVersion, sceneSettings)
+	zipData, err := s.generatePackage(tokenName, token.Token, mayaVersions, defaultMayaVersion, sceneSettings, requirements)
 	if err != nil {
 		slog.Error("Failed to generate package", "error", err)
 		http.Error(w, "Failed to generate package: "+err.Error(), http.StatusInternalServerError)
@@ -847,7 +859,7 @@ func (s *Server) HandlePackageDownload(w http.ResponseWriter, r *http.Request) {
 	w.Write(zipData)
 }
 
-func (s *Server) generatePackage(tokenName, tokenValue string, mayaVersions []string, defaultMayaVersion string, sceneSettings string) ([]byte, error) {
+func (s *Server) generatePackage(tokenName, tokenValue string, mayaVersions []string, defaultMayaVersion string, sceneSettings string, requirements string) ([]byte, error) {
 	templateDir := "/home/exedev/hubv2/templates"
 
 	// Check if template exists
@@ -987,6 +999,11 @@ func (s *Server) generatePackage(tokenName, tokenValue string, mayaVersions []st
 			// Replace the requirements.txt path to use local path
 			modified = strings.Replace(modified, `"R:\Tools\Maya\requirements.txt"`, `"%maya_root_path%\requirements.txt"`, 1)
 			_, err = writer.Write([]byte(modified))
+			return err
+
+		case baseName == "requirements.txt":
+			// Write custom requirements
+			_, err = writer.Write([]byte(requirements))
 			return err
 
 		default:
