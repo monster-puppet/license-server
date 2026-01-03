@@ -277,6 +277,21 @@ func (s *Server) HandleUploadLatest(w http.ResponseWriter, r *http.Request) {
 	fi, _ := os.Stat(filePath)
 	fileSize := fi.Size()
 
+	// If this is Maya 2024, also copy to generic mk.zip for backward compatibility
+	if mayaVersion == "2024" {
+		genericPath := filepath.Join(s.LibFolder, s.LatestFile)
+		srcFile, err := os.Open(filePath)
+		if err == nil {
+			defer srcFile.Close()
+			dstFile, err := os.Create(genericPath)
+			if err == nil {
+				defer dstFile.Close()
+				io.Copy(dstFile, srcFile)
+				slog.Info("Also updated generic mk.zip for backward compatibility")
+			}
+		}
+	}
+
 	// Record in upload history
 	q := dbgen.New(s.DB)
 	q.AddUploadHistory(r.Context(), dbgen.AddUploadHistoryParams{
