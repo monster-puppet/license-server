@@ -26,7 +26,7 @@ if errorlevel 1 (
         "!mayaPath!\bin\mayapy.exe" -m pip install -r "R:\Tools\Maya\requirements.txt"
 
         :: Recursively find all .mod files and extend MAYA_MODULE_PATH
-        for /r "!maya_root_path!" %%i in (*.mod) do (
+        for /r "%MAYA_MODULE_PATH%" %%i in (*.mod) do (
             set "module_dir=%%~dpi"
             set "module_dir=!module_dir:~0,-1!"
             echo Module detected in: !module_dir!
