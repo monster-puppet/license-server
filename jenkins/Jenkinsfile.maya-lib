@@ -1,0 +1,219 @@
+pipeline {
+    agent {
+        label 'windows'
+    }
+    parameters {
+        // Note: The MAYA_VERSION parameter is now used by the matrix build
+        // You can still use it to build a single version if needed
+        booleanParam(name: 'BUILD_ALL_VERSIONS', defaultValue: true, description: 'Build for all Maya versions (2024, 2025)')
+        choice(name: 'SINGLE_MAYA_VERSION', choices: ['2024', '2025', '2023'], description: 'Maya version to build (only used if BUILD_ALL_VERSIONS is false)')
+    }
+    environment {
+        P4PORT = 'ssl:p4.monster-puppet.com:1666'
+        P4USER = credentials('01c2f677-fca6-4e3d-9a62-6340584a154c')
+        P4DEPOT_PATH = '//depot/Tools'
+        LOCAL_WORKSPACE = "C:/JenkinsAgent/workspace/maya_lib"
+    }
+    stages {
+        stage('Perforce Trust') {
+            steps {
+                script {
+                    bat 'p4 trust -y'
+                }
+            }
+        }
+        stage('Perforce Sync') {
+            steps {
+                script {
+                    def workspaceSpec = [
+                        $class: 'ManualWorkspaceImpl',
+                        name: "${params.P4_WORKSPACE}",
+                        spec: [
+                            allwrite: false,
+                            clobber: true,
+                            compress: false,
+                            locked: false,
+                            modtime: false,
+                            rmdir: false,
+                            view: """
+                                //depot/Tools/Automation/MonsterPuppet_CI.mod //${params.P4_WORKSPACE}/Automation/MonsterPuppet_CI.mod
+                                //depot/Tools/Launcher/requirements.txt //${params.P4_WORKSPACE}/Launcher/requirements.txt
+                                //depot/Tools/Maya/scripts/mpc_perforce.py //${params.P4_WORKSPACE}/Maya/scripts/mpc_perforce.py
+                                //depot/Tools/Maya/scripts/publish.py //${params.P4_WORKSPACE}/Maya/scripts/publish.py
+                                //depot/Tools/Maya/scripts/publish_zip.py //${params.P4_WORKSPACE}/Maya/scripts/publish_zip.py
+                                //depot/Tools/Maya/scripts/publish_upload.py //${params.P4_WORKSPACE}/Maya/scripts/publish_upload.py
+                                //depot/Tools/Maya/scripts/mk/... //${params.P4_WORKSPACE}/Maya/scripts/mk/...
+                                //depot/Tools/Maya/scripts/puppet_api/... //${params.P4_WORKSPACE}/Maya/scripts/puppet_api/...
+                                //depot/Tools/Maya/tests/... //${params.P4_WORKSPACE}/Maya/tests/...
+                            """
+                        ]
+                    ]
+        
+                    p4sync charset: 'none',
+                        credential: '01c2f677-fca6-4e3d-9a62-6340584a154c',
+                        format: 'jenkins-${JOB_NAME}',
+                        populate: [$class: 'ForceCleanImpl', have: false, pin: '', quiet: true],
+                        source: [$class: 'DepotSource', depot: "${params.P4_DEPOT_PATH}"],
+                        workspace: workspaceSpec
+                }
+            }
+        }
+        stage('Build All Versions') {
+            when {
+                expression { params.BUILD_ALL_VERSIONS == true }
+            }
+            matrix {
+                axes {
+                    axis {
+                        name 'MAYA_VERSION'
+                        values '2024', '2025'
+                    }
+                }
+                stages {
+                    stage('Install Dependencies') {
+                        steps {
+                            bat """
+                                set "MAYA_PATH=C:\\Program Files\\Autodesk\\Maya${MAYA_VERSION}\\bin\\mayapy.exe"
+                                "%MAYA_PATH%" -m pip install --upgrade pip setuptools wheel
+                                "%MAYA_PATH%" -m pip install -r "%LOCAL_WORKSPACE%/Launcher/requirements.txt"
+                            """
+                        }
+                    }
+                    stage('Compile') {
+                        steps {
+                            bat """
+                                set "MAYA_PATH=C:\\Program Files\\Autodesk\\Maya${MAYA_VERSION}\\bin\\mayapy.exe"
+                                "%MAYA_PATH%" "%LOCAL_WORKSPACE%/Maya/scripts/publish.py" "%LOCAL_WORKSPACE%/Maya/scripts"
+                            """
+                        }
+                    }
+                    stage('Package') {
+                        steps {
+                            bat """
+                                set "MAYA_PATH=C:\\Program Files\\Autodesk\\Maya${MAYA_VERSION}\\bin\\mayapy.exe"
+                                "%MAYA_PATH%" "%LOCAL_WORKSPACE%/Maya/scripts/publish_zip.py" "%LOCAL_WORKSPACE%/Maya/scripts"
+                            """
+                        }
+                    }
+                    stage('Upload') {
+                        steps {
+                            script {
+                                def uploadOutput = bat script: """
+                                    set "MAYA_PATH=C:\\Program Files\\Autodesk\\Maya${MAYA_VERSION}\\bin\\mayapy.exe"
+                                    "%MAYA_PATH%" "%LOCAL_WORKSPACE%/Maya/scripts/publish_upload.py" "%LOCAL_WORKSPACE%/Maya/scripts" %UPLOAD_TOKEN% ${MAYA_VERSION}
+                                """, returnStdout: true
+
+                                def zipSizeMatch = uploadOutput =~ /ZIP_SIZE_MB:(\d+(\.\d+)?)/
+                                def zipSize = "Unknown"
+                                if (zipSizeMatch) {
+                                    zipSize = zipSizeMatch[0][1]
+                                }
+                                // Store per-version size
+                                env."ZIP_SIZE_MB_${MAYA_VERSION}" = zipSize
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        stage('Build Single Version') {
+            when {
+                expression { params.BUILD_ALL_VERSIONS == false }
+            }
+            environment {
+                MAYA_VERSION = "${params.SINGLE_MAYA_VERSION}"
+                MAYA_PATH = "C:\\Program Files\\Autodesk\\Maya${params.SINGLE_MAYA_VERSION}\\bin\\mayapy.exe"
+            }
+            stages {
+                stage('Install Dependencies') {
+                    steps {
+                        bat """
+                            "%MAYA_PATH%" -m pip install --upgrade pip setuptools wheel
+                            "%MAYA_PATH%" -m pip install -r "%LOCAL_WORKSPACE%/Launcher/requirements.txt"
+                        """
+                    }
+                }
+                stage('Compile') {
+                    steps {
+                        bat """
+                            "%MAYA_PATH%" "%LOCAL_WORKSPACE%/Maya/scripts/publish.py" "%LOCAL_WORKSPACE%/Maya/scripts"
+                        """
+                    }
+                }
+                stage('Package') {
+                    steps {
+                        bat """
+                            "%MAYA_PATH%" "%LOCAL_WORKSPACE%/Maya/scripts/publish_zip.py" "%LOCAL_WORKSPACE%/Maya/scripts"
+                        """
+                    }
+                }
+                stage('Upload') {
+                    steps {
+                        script {
+                            def uploadOutput = bat script: """
+                                "%MAYA_PATH%" "%LOCAL_WORKSPACE%/Maya/scripts/publish_upload.py" "%LOCAL_WORKSPACE%/Maya/scripts" %UPLOAD_TOKEN% ${MAYA_VERSION}
+                            """, returnStdout: true
+
+                            def zipSizeMatch = uploadOutput =~ /ZIP_SIZE_MB:(\d+(\.\d+)?)/
+                            def zipSize = "Unknown"
+                            if (zipSizeMatch) {
+                                zipSize = zipSizeMatch[0][1]
+                            }
+                            env.ZIP_SIZE_MB = zipSize
+                        }
+                    }
+                }
+            }
+        }
+    }
+    post {
+        always {
+            cleanWs()
+            echo "Pipeline completed"
+        }
+        success {
+            script {
+                def now = new Date()
+                def formattedDate = new java.text.SimpleDateFormat("dd-MM-yyyy-HH").format(now)
+                currentBuild.displayName = "#mklib_${formattedDate}"
+
+                def sizeInfo = ""
+                if (params.BUILD_ALL_VERSIONS) {
+                    sizeInfo = "Maya 2024: ${env.ZIP_SIZE_MB_2024 ?: 'N/A'}MB, Maya 2025: ${env.ZIP_SIZE_MB_2025 ?: 'N/A'}MB"
+                } else {
+                    sizeInfo = "Maya ${params.SINGLE_MAYA_VERSION}: ${env.ZIP_SIZE_MB ?: 'N/A'}MB"
+                }
+
+                slackSend(
+                    channel: "#build",
+                    color: "#7cf797",
+                    botUser: true,
+                    attachments: [
+                        [
+                            "color": "#7cf797",
+                            "blocks": [
+                                [
+                                    "type": "header",
+                                    "text": [
+                                        "type": "plain_text",
+                                        "text": "LIBRARIES PUBLISHED"
+                                    ]
+                                ],
+                                [
+                                    "type": "divider"
+                                ],
+                                [
+                                    "type": "section",
+                                    "text": [
+                                        "type": "mrkdwn",
+                                        "text": ":collision: A new version of mk libs has been published (:package: ${sizeInfo})\n<${env.BUILD_URL}|Open build ${currentBuild.displayName}>"
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                )
+            }
+        }
+    }
+}

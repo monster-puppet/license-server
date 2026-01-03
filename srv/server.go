@@ -159,6 +159,14 @@ func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
 	s.HandleAdmin(w, r)
 }
 
+// validMayaVersions defines the supported Maya versions
+var validMayaVersions = map[string]bool{
+	"2023": true,
+	"2024": true,
+	"2025": true,
+	"2026": true,
+}
+
 func (s *Server) HandleDownloadLatest(w http.ResponseWriter, r *http.Request) {
 	token := r.Header.Get("Authorization")
 	if !s.isValidDownloadToken(token) {
@@ -168,7 +176,32 @@ func (s *Server) HandleDownloadLatest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	filePath := filepath.Join(s.LibFolder, s.LatestFile)
+	// Get Maya version from query param or header
+	mayaVersion := r.URL.Query().Get("maya_version")
+	if mayaVersion == "" {
+		mayaVersion = r.Header.Get("X-Maya-Version")
+	}
+
+	var filePath string
+	var fileName string
+
+	if mayaVersion != "" && validMayaVersions[mayaVersion] {
+		// Version-specific file
+		fileName = fmt.Sprintf("mk_%s.zip", mayaVersion)
+		filePath = filepath.Join(s.LibFolder, fileName)
+		
+		// If version-specific file doesn't exist, fall back to generic
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			slog.Warn("Version-specific file not found, falling back to generic", "maya_version", mayaVersion)
+			fileName = s.LatestFile
+			filePath = filepath.Join(s.LibFolder, s.LatestFile)
+		}
+	} else {
+		// Generic file (backward compatibility)
+		fileName = s.LatestFile
+		filePath = filepath.Join(s.LibFolder, s.LatestFile)
+	}
+
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
@@ -176,7 +209,7 @@ func (s *Server) HandleDownloadLatest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", s.LatestFile))
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", fileName))
 	http.ServeFile(w, r, filePath)
 }
 
@@ -205,7 +238,25 @@ func (s *Server) HandleUploadLatest(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	filePath := filepath.Join(s.LibFolder, s.LatestFile)
+	// Get Maya version from query param or header
+	mayaVersion := r.URL.Query().Get("maya_version")
+	if mayaVersion == "" {
+		mayaVersion = r.Header.Get("X-Maya-Version")
+	}
+
+	// Determine filename based on Maya version
+	var fileName string
+	var mayaVersionPtr *string
+	if mayaVersion != "" && validMayaVersions[mayaVersion] {
+		fileName = fmt.Sprintf("mk_%s.zip", mayaVersion)
+		mayaVersionPtr = &mayaVersion
+	} else {
+		// Generic upload (backward compatibility)
+		fileName = s.LatestFile
+		mayaVersionPtr = nil
+	}
+
+	filePath := filepath.Join(s.LibFolder, fileName)
 	dst, err := os.Create(filePath)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
@@ -229,16 +280,17 @@ func (s *Server) HandleUploadLatest(w http.ResponseWriter, r *http.Request) {
 	// Record in upload history
 	q := dbgen.New(s.DB)
 	q.AddUploadHistory(r.Context(), dbgen.AddUploadHistoryParams{
-		FileName:   s.LatestFile,
-		FileSize:   fileSize,
-		UploadedAt: time.Now(),
+		FileName:    fileName,
+		FileSize:    fileSize,
+		UploadedAt:  time.Now(),
+		MayaVersion: mayaVersionPtr,
 	})
 	// Trim history to last 100 entries
 	q.TrimUploadHistory(r.Context())
 
-	slog.Info("Uploaded new file", "path", filePath, "size", fileSize)
+	slog.Info("Uploaded new file", "path", filePath, "size", fileSize, "maya_version", mayaVersion)
 	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(fmt.Sprintf(`{"message": "File uploaded successfully", "filename": "%s"}`, s.LatestFile)))
+	w.Write([]byte(fmt.Sprintf(`{"message": "File uploaded successfully", "filename": "%s", "maya_version": "%s"}`, fileName, mayaVersion)))
 }
 
 func (s *Server) isValidDownloadToken(token string) bool {
@@ -429,9 +481,10 @@ func (s *Server) getSessionEmail(r *http.Request) string {
 }
 
 type FileInfo struct {
-	Exists   bool
-	Size     string
-	Modified string
+	Exists      bool
+	Size        string
+	Modified    string
+	MayaVersion string
 }
 
 func (s *Server) getFileInfo() FileInfo {
@@ -453,10 +506,50 @@ func (s *Server) getFileInfo() FileInfo {
 	}
 
 	return FileInfo{
-		Exists:   true,
-		Size:     sizeStr,
-		Modified: info.ModTime().Format("Jan 2, 2006 at 3:04 PM"),
+		Exists:      true,
+		Size:        sizeStr,
+		Modified:    info.ModTime().Format("Jan 2, 2006 at 3:04 PM"),
+		MayaVersion: "generic",
 	}
+}
+
+func (s *Server) getAllVersionFileInfo() []FileInfo {
+	var files []FileInfo
+
+	// Check generic file
+	if fi := s.getFileInfo(); fi.Exists {
+		files = append(files, fi)
+	}
+
+	// Check version-specific files
+	for version := range validMayaVersions {
+		fileName := fmt.Sprintf("mk_%s.zip", version)
+		filePath := filepath.Join(s.LibFolder, fileName)
+		info, err := os.Stat(filePath)
+		if err != nil {
+			continue
+		}
+
+		size := info.Size()
+		var sizeStr string
+		switch {
+		case size >= 1024*1024:
+			sizeStr = fmt.Sprintf("%.2f MB", float64(size)/(1024*1024))
+		case size >= 1024:
+			sizeStr = fmt.Sprintf("%.2f KB", float64(size)/1024)
+		default:
+			sizeStr = fmt.Sprintf("%d bytes", size)
+		}
+
+		files = append(files, FileInfo{
+			Exists:      true,
+			Size:        sizeStr,
+			Modified:    info.ModTime().Format("Jan 2, 2006 at 3:04 PM"),
+			MayaVersion: version,
+		})
+	}
+
+	return files
 }
 
 func (s *Server) HandleAdmin(w http.ResponseWriter, r *http.Request) {
@@ -474,17 +567,19 @@ func (s *Server) HandleAdmin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		Email    string
-		Picture  string
-		Tokens   []dbgen.GetAllTokensRow
-		File     FileInfo
-		FileName string
+		Email        string
+		Picture      string
+		Tokens       []dbgen.GetAllTokensRow
+		File         FileInfo
+		FileName     string
+		VersionFiles []FileInfo
 	}{
-		Email:    session.Email,
-		Picture:  session.Picture,
-		Tokens:   tokens,
-		File:     s.getFileInfo(),
-		FileName: s.LatestFile,
+		Email:        session.Email,
+		Picture:      session.Picture,
+		Tokens:       tokens,
+		File:         s.getFileInfo(),
+		FileName:     s.LatestFile,
+		VersionFiles: s.getAllVersionFileInfo(),
 	}
 
 	tmpl, err := template.ParseFiles(filepath.Join(s.TemplatesDir, "admin.html"))

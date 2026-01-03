@@ -224,6 +224,27 @@
             color: #555;
             font-style: italic;
         }
+        .version-files-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .version-file {
+            background: #0a0a0a;
+            border: 1px solid #252525;
+            border-radius: 6px;
+            padding: 12px;
+        }
+        .version-file .file-name {
+            font-size: 16px;
+            font-weight: 500;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+        .version-file .file-meta {
+            font-size: 13px;
+        }
         .btn-history {
             margin-top: 15px;
             background: transparent;
@@ -315,6 +336,14 @@
             color: #4caf50;
             font-size: 13px;
             font-weight: 500;
+            white-space: nowrap;
+        }
+        .history-version {
+            color: #888;
+            font-size: 12px;
+            background: #252525;
+            padding: 2px 8px;
+            border-radius: 4px;
             white-space: nowrap;
         }
         .history-empty {
@@ -452,19 +481,24 @@
     </div>
 
     <div class="card">
-        <h2>Current Package</h2>
+        <h2>Current Packages</h2>
         <div class="file-info">
-            {{if .File.Exists}}
-            <div class="file-details">
-                <div class="file-name">📦 {{.FileName}}</div>
-                <div class="file-meta">
-                    <span><strong>Size:</strong> {{.File.Size}}</span>
-                    <span><strong>Last Modified:</strong> {{.File.Modified}}</span>
+            {{if .VersionFiles}}
+            <div class="version-files-grid">
+                {{range .VersionFiles}}
+                <div class="version-file">
+                    <div class="file-name">📦 mk_{{.MayaVersion}}.zip</div>
+                    <div class="file-meta">
+                        <span><strong>Maya:</strong> {{.MayaVersion}}</span>
+                        <span><strong>Size:</strong> {{.Size}}</span>
+                        <span><strong>Modified:</strong> {{.Modified}}</span>
+                    </div>
                 </div>
-                <button class="btn-history" onclick="showHistory()">📜 View Upload History</button>
+                {{end}}
             </div>
+            <button class="btn-history" onclick="showHistory()">📜 View Upload History</button>
             {{else}}
-            <div class="file-empty">No file uploaded yet</div>
+            <div class="file-empty">No packages uploaded yet</div>
             <button class="btn-history" onclick="showHistory()">📜 View Upload History</button>
             {{end}}
         </div>
@@ -626,6 +660,7 @@
                 list.innerHTML = history.map(item => `
                     <li class="history-item">
                         <span class="history-date">${formatDate(item.uploaded_at)}</span>
+                        <span class="history-version">${item.maya_version ? 'Maya ' + item.maya_version : 'generic'}</span>
                         <span class="history-size">${formatSize(item.file_size)}</span>
                     </li>
                 `).join('');

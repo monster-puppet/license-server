@@ -11,22 +11,28 @@ import (
 )
 
 const addUploadHistory = `-- name: AddUploadHistory :exec
-INSERT INTO upload_history (file_name, file_size, uploaded_at) VALUES (?, ?, ?)
+INSERT INTO upload_history (file_name, file_size, uploaded_at, maya_version) VALUES (?, ?, ?, ?)
 `
 
 type AddUploadHistoryParams struct {
-	FileName   string    `json:"file_name"`
-	FileSize   int64     `json:"file_size"`
-	UploadedAt time.Time `json:"uploaded_at"`
+	FileName    string    `json:"file_name"`
+	FileSize    int64     `json:"file_size"`
+	UploadedAt  time.Time `json:"uploaded_at"`
+	MayaVersion *string   `json:"maya_version"`
 }
 
 func (q *Queries) AddUploadHistory(ctx context.Context, arg AddUploadHistoryParams) error {
-	_, err := q.db.ExecContext(ctx, addUploadHistory, arg.FileName, arg.FileSize, arg.UploadedAt)
+	_, err := q.db.ExecContext(ctx, addUploadHistory,
+		arg.FileName,
+		arg.FileSize,
+		arg.UploadedAt,
+		arg.MayaVersion,
+	)
 	return err
 }
 
 const getUploadHistory = `-- name: GetUploadHistory :many
-SELECT id, file_name, file_size, uploaded_at FROM upload_history ORDER BY uploaded_at DESC LIMIT ?
+SELECT id, file_name, file_size, uploaded_at, maya_version FROM upload_history ORDER BY uploaded_at DESC LIMIT ?
 `
 
 func (q *Queries) GetUploadHistory(ctx context.Context, limit int64) ([]UploadHistory, error) {
@@ -43,6 +49,45 @@ func (q *Queries) GetUploadHistory(ctx context.Context, limit int64) ([]UploadHi
 			&i.FileName,
 			&i.FileSize,
 			&i.UploadedAt,
+			&i.MayaVersion,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getUploadHistoryByMayaVersion = `-- name: GetUploadHistoryByMayaVersion :many
+SELECT id, file_name, file_size, uploaded_at, maya_version FROM upload_history WHERE maya_version = ? ORDER BY uploaded_at DESC LIMIT ?
+`
+
+type GetUploadHistoryByMayaVersionParams struct {
+	MayaVersion *string `json:"maya_version"`
+	Limit       int64   `json:"limit"`
+}
+
+func (q *Queries) GetUploadHistoryByMayaVersion(ctx context.Context, arg GetUploadHistoryByMayaVersionParams) ([]UploadHistory, error) {
+	rows, err := q.db.QueryContext(ctx, getUploadHistoryByMayaVersion, arg.MayaVersion, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []UploadHistory{}
+	for rows.Next() {
+		var i UploadHistory
+		if err := rows.Scan(
+			&i.ID,
+			&i.FileName,
+			&i.FileSize,
+			&i.UploadedAt,
+			&i.MayaVersion,
 		); err != nil {
 			return nil, err
 		}

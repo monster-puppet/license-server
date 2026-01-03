@@ -34,10 +34,11 @@ type Token struct {
 }
 
 type UploadHistory struct {
-	ID         int64     `json:"id"`
-	FileName   string    `json:"file_name"`
-	FileSize   int64     `json:"file_size"`
-	UploadedAt time.Time `json:"uploaded_at"`
+	ID          int64     `json:"id"`
+	FileName    string    `json:"file_name"`
+	FileSize    int64     `json:"file_size"`
+	UploadedAt  time.Time `json:"uploaded_at"`
+	MayaVersion *string   `json:"maya_version"`
 }
 
 type Visitor struct {
