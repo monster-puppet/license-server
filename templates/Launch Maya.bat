@@ -6,6 +6,7 @@ set "regKey=HKEY_LOCAL_MACHINE\SOFTWARE\Autodesk\Maya\%version%\Setup\InstallPat
 set "current_folder=%~dp0"
 set "maya_root_path=%current_folder%Tools\Maya"
 set "MAYA_MODULE_PATH=%current_folder%Tools\Maya"
+set "MAYA_SCRIPT_PATH=%current_folder%Tools\Maya\scripts;%MAYA_SCRIPT_PATH%"
 set "MAYA_PROJECT=R:\"
 
 :: Check if the Maya Registry Key exists
