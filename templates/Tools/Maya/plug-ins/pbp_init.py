@@ -1,6 +1,3 @@
-"""Auto-initialization plugin for PBP module.
-This plugin runs userSetup.py when loaded.
-"""
 import maya.api.OpenMaya as om
 import maya.cmds as cmds
 import sys
