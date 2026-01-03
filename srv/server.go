@@ -209,6 +209,22 @@ func (s *Server) HandleDownloadLatest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Record download in history
+	q := dbgen.New(s.DB)
+	tokenName, err := q.GetTokenNameByToken(r.Context(), token)
+	if err == nil {
+		var mayaVersionPtr *string
+		if mayaVersion != "" {
+			mayaVersionPtr = &mayaVersion
+		}
+		q.AddDownloadHistory(r.Context(), dbgen.AddDownloadHistoryParams{
+			TokenName:    tokenName,
+			MayaVersion:  mayaVersionPtr,
+			DownloadedAt: time.Now(),
+		})
+		q.TrimDownloadHistory(r.Context())
+	}
+
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", fileName))
 	http.ServeFile(w, r, filePath)
 }
@@ -983,6 +999,49 @@ func (s *Server) HandleUploadHistory(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(history)
 }
 
+func (s *Server) HandleDownloadHistory(w http.ResponseWriter, r *http.Request) {
+	session := s.getSession(r)
+	if session == nil {
+		http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
+		return
+	}
+
+	data := struct {
+		Email   string
+		Picture string
+	}{
+		Email:   session.Email,
+		Picture: session.Picture,
+	}
+
+	tmpl, err := template.ParseFiles(filepath.Join(s.TemplatesDir, "downloads.html"))
+	if err != nil {
+		http.Error(w, "Failed to load template", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	tmpl.Execute(w, data)
+}
+
+func (s *Server) HandleDownloadHistoryAPI(w http.ResponseWriter, r *http.Request) {
+	email := s.getSessionEmail(r)
+	if email == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	q := dbgen.New(s.DB)
+	history, err := q.GetDownloadHistory(r.Context(), 100)
+	if err != nil {
+		http.Error(w, "Failed to get history", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(history)
+}
+
 func (s *Server) HandleUploadTemplate(w http.ResponseWriter, r *http.Request) {
 	token := r.Header.Get("Authorization")
 	if token != s.getUploadToken() {
@@ -1040,6 +1099,8 @@ func (s *Server) Serve(addr string) error {
 	mux.HandleFunc("POST /upload/latest", s.HandleUploadLatest)
 	mux.HandleFunc("POST /upload/template", s.HandleUploadTemplate)
 	mux.HandleFunc("GET /upload/history", s.HandleUploadHistory)
+	mux.HandleFunc("GET /downloads", s.HandleDownloadHistory)
+	mux.HandleFunc("GET /download/history", s.HandleDownloadHistoryAPI)
 	mux.HandleFunc("GET /package/{name}", s.HandlePackageDownload)
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir(filepath.Join(s.TemplatesDir, "..", "static")))))
 

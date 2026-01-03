@@ -233,6 +233,17 @@ func (q *Queries) GetTokenByName(ctx context.Context, name string) (GetTokenByNa
 	return i, err
 }
 
+const getTokenNameByToken = `-- name: GetTokenNameByToken :one
+SELECT name FROM tokens WHERE token = ?
+`
+
+func (q *Queries) GetTokenNameByToken(ctx context.Context, token string) (string, error) {
+	row := q.db.QueryRowContext(ctx, getTokenNameByToken, token)
+	var name string
+	err := row.Scan(&name)
+	return name, err
+}
+
 const getUploadToken = `-- name: GetUploadToken :one
 SELECT token FROM tokens WHERE token_type = 'upload' LIMIT 1
 `

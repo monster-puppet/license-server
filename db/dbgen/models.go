@@ -8,6 +8,13 @@ import (
 	"time"
 )
 
+type DownloadHistory struct {
+	ID           int64     `json:"id"`
+	TokenName    string    `json:"token_name"`
+	MayaVersion  *string   `json:"maya_version"`
+	DownloadedAt time.Time `json:"downloaded_at"`
+}
+
 type Migration struct {
 	MigrationNumber int64     `json:"migration_number"`
 	MigrationName   string    `json:"migration_name"`

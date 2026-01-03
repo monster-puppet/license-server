@@ -52,6 +52,31 @@
         }
         a { color: #e74c3c; text-decoration: none; }
         a:hover { text-decoration: underline; color: #ff6b5b; }
+        .navbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #252525;
+        }
+        .nav-link {
+            padding: 8px 16px;
+            border-radius: 6px;
+            background: #1a1a1a;
+            color: #888;
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .nav-link:hover {
+            background: #252525;
+            color: #e0e0e0;
+            text-decoration: none;
+        }
+        .nav-link.active {
+            background: #e74c3c;
+            color: #fff;
+        }
         .card {
             background: #151515;
             border-radius: 8px;
@@ -479,6 +504,11 @@
             <a href="/logout">Logout</a>
         </div>
     </div>
+
+    <nav class="navbar">
+        <a href="/" class="nav-link active">Packages</a>
+        <a href="/downloads" class="nav-link">Downloads</a>
+    </nav>
 
     <div class="card">
         <h2>Current Packages</h2>

@@ -4,6 +4,9 @@ SELECT id, name, token, token_type, maya_versions, default_maya_version, created
 -- name: GetDownloadTokens :many
 SELECT token FROM tokens WHERE token_type = 'download';
 
+-- name: GetTokenNameByToken :one
+SELECT name FROM tokens WHERE token = ?;
+
 -- name: GetUploadToken :one
 SELECT token FROM tokens WHERE token_type = 'upload' LIMIT 1;
 
