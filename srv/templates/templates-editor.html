@@ -203,6 +203,26 @@
             font-family: monospace;
             font-size: 13px;
             color: #888;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .breadcrumb {
+            color: #888;
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 3px;
+            transition: all 0.15s;
+        }
+        .breadcrumb:hover {
+            color: #e74c3c;
+            background: #1a1a1a;
+        }
+        .breadcrumb-sep {
+            color: #555;
+        }
+        .breadcrumb-file {
+            color: #e0e0e0;
         }
         .editor-actions {
             display: flex;
@@ -488,7 +508,7 @@
 
         <div class="editor-container">
             <div class="editor-header" id="editorHeader" style="display: none;">
-                <span class="editor-path" id="editorPath"></span>
+                <div class="editor-path" id="editorPath"></div>
                 <div class="editor-actions">
                     <span class="status" id="editorStatus"></span>
                     <button class="btn btn-secondary" onclick="reloadFile()">
@@ -583,6 +603,50 @@
                 cmEditor.setValue(content);
             } else {
                 editor.value = content;
+            }
+        }
+
+        function renderBreadcrumbs(path) {
+            const parts = path.split('/');
+            const filename = parts.pop();
+            let html = '';
+            let currentPath = '';
+            
+            for (let i = 0; i < parts.length; i++) {
+                if (i > 0) currentPath += '/';
+                currentPath += parts[i];
+                const folderPath = currentPath;
+                html += `<span class="breadcrumb" onclick="navigateToFolder('${folderPath}')">${parts[i]}</span>`;
+                html += '<span class="breadcrumb-sep">/</span>';
+            }
+            
+            html += `<span class="breadcrumb-file">${filename}</span>`;
+            editorPath.innerHTML = html;
+        }
+
+        function navigateToFolder(path) {
+            // Expand all folders in the path and set current folder
+            const parts = path.split('/');
+            let currentPath = '';
+            
+            for (let i = 0; i < parts.length; i++) {
+                if (i > 0) currentPath += '/';
+                currentPath += parts[i];
+                
+                // Expand this folder
+                const children = document.querySelector(`.tree-children[data-parent="${currentPath}"]`);
+                if (children) {
+                    children.classList.add('expanded');
+                }
+            }
+            
+            // Set current folder
+            setCurrentFolder(path);
+            
+            // Scroll the folder into view
+            const folderEl = document.querySelector(`.tree-item.folder[data-path="${path}"]`);
+            if (folderEl) {
+                folderEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         }
 
@@ -797,7 +861,7 @@
 
         async function loadFile(path) {
             currentFile = path;
-            editorPath.textContent = path;
+            renderBreadcrumbs(path);
             editorHeader.style.display = 'flex';
             placeholder.style.display = 'none';
             binaryNotice.style.display = 'none';
