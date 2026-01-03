@@ -566,14 +566,20 @@ func (s *Server) HandleAdminCreateToken(w http.ResponseWriter, r *http.Request) 
 	}
 	mayaVersionsStr := strings.Join(mayaVersions, ",")
 
+	defaultMayaVersion := r.FormValue("default_maya_version")
+	if defaultMayaVersion == "" {
+		defaultMayaVersion = mayaVersions[0] // Default to first selected version
+	}
+
 	tokenValue := generateToken()
 
 	q := dbgen.New(s.DB)
 	_, err := q.CreateToken(r.Context(), dbgen.CreateTokenParams{
-		Name:         name,
-		Token:        tokenValue,
-		TokenType:    "download",
-		MayaVersions: &mayaVersionsStr,
+		Name:               name,
+		Token:              tokenValue,
+		TokenType:          "download",
+		MayaVersions:       &mayaVersionsStr,
+		DefaultMayaVersion: &defaultMayaVersion,
 	})
 	if err != nil {
 		http.Error(w, "Failed to create token: "+err.Error(), http.StatusInternalServerError)
@@ -663,8 +669,13 @@ func (s *Server) HandlePackageDownload(w http.ResponseWriter, r *http.Request) {
 		mayaVersions = []string{"2024", "2025", "2026"}
 	}
 
+	defaultMayaVersion := "2024"
+	if token.DefaultMayaVersion != nil && *token.DefaultMayaVersion != "" {
+		defaultMayaVersion = *token.DefaultMayaVersion
+	}
+
 	// Generate the package
-	zipData, err := s.generatePackage(tokenName, token.Token, mayaVersions)
+	zipData, err := s.generatePackage(tokenName, token.Token, mayaVersions, defaultMayaVersion)
 	if err != nil {
 		slog.Error("Failed to generate package", "error", err)
 		http.Error(w, "Failed to generate package: "+err.Error(), http.StatusInternalServerError)
@@ -676,7 +687,7 @@ func (s *Server) HandlePackageDownload(w http.ResponseWriter, r *http.Request) {
 	w.Write(zipData)
 }
 
-func (s *Server) generatePackage(tokenName, tokenValue string, mayaVersions []string) ([]byte, error) {
+func (s *Server) generatePackage(tokenName, tokenValue string, mayaVersions []string, defaultMayaVersion string) ([]byte, error) {
 	templateDir := "/home/exedev/hubv2/templates"
 
 	// Check if template exists
@@ -783,6 +794,20 @@ func (s *Server) generatePackage(tokenName, tokenValue string, mayaVersions []st
 			}
 			modified := strings.ReplaceAll(string(content), "shelf_PBP_", "shelf_"+tokenName+"_")
 			modified = strings.ReplaceAll(modified, "pbp.", tokenName+".")
+			_, err = writer.Write([]byte(modified))
+			return err
+
+		case baseName == "Launch Maya.bat":
+			// Modify Launch Maya.bat with default Maya version and local requirements path
+			content, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			modified := string(content)
+			// Replace the version on line 4
+			modified = strings.Replace(modified, `set "version=2024"`, `set "version=`+defaultMayaVersion+`"`, 1)
+			// Replace the requirements.txt path to use local path
+			modified = strings.Replace(modified, `"R:\Tools\Maya\requirements.txt"`, `"%maya_root_path%\requirements.txt"`, 1)
 			_, err = writer.Write([]byte(modified))
 			return err
 

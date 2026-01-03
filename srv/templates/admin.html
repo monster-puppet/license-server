@@ -348,6 +348,19 @@
             height: 18px;
             accent-color: #e74c3c;
         }
+        .version-select {
+            padding: 8px 12px;
+            border: 1px solid #333;
+            border-radius: 4px;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .version-select:focus {
+            outline: none;
+            border-color: #e74c3c;
+        }
         .btn-action {
             display: inline-flex;
             align-items: center;
@@ -538,12 +551,20 @@
                 <input type="text" name="name" placeholder="Client name (e.g. acme)" required>
             </div>
             <div class="maya-versions">
-                <label>Maya Versions:</label>
+                <label>Supported Maya Versions:</label>
                 <div class="checkbox-group">
-                    <label class="checkbox-label"><input type="checkbox" name="maya_versions" value="2024" checked> 2024</label>
-                    <label class="checkbox-label"><input type="checkbox" name="maya_versions" value="2025" checked> 2025</label>
-                    <label class="checkbox-label"><input type="checkbox" name="maya_versions" value="2026" checked> 2026</label>
+                    <label class="checkbox-label"><input type="checkbox" name="maya_versions" value="2024" checked onchange="updateDefaultVersionOptions()"> 2024</label>
+                    <label class="checkbox-label"><input type="checkbox" name="maya_versions" value="2025" checked onchange="updateDefaultVersionOptions()"> 2025</label>
+                    <label class="checkbox-label"><input type="checkbox" name="maya_versions" value="2026" checked onchange="updateDefaultVersionOptions()"> 2026</label>
                 </div>
+            </div>
+            <div class="maya-versions">
+                <label>Default Maya Version:</label>
+                <select name="default_maya_version" id="default_maya_version" class="version-select">
+                    <option value="2024" selected>2024</option>
+                    <option value="2025">2025</option>
+                    <option value="2026">2026</option>
+                </select>
             </div>
             <div class="form-row" style="margin-top: 15px;">
                 <button type="submit" class="btn-primary">Create Package</button>
@@ -649,6 +670,37 @@
                 form.submit();
             }
             return false;
+        }
+
+        function updateDefaultVersionOptions() {
+            const checkboxes = document.querySelectorAll('input[name="maya_versions"]:checked');
+            const select = document.getElementById('default_maya_version');
+            const currentValue = select.value;
+            
+            // Get all checked versions
+            const checkedVersions = Array.from(checkboxes).map(cb => cb.value);
+            
+            // Update select options
+            select.innerHTML = '';
+            checkedVersions.forEach(version => {
+                const option = document.createElement('option');
+                option.value = version;
+                option.textContent = version;
+                if (version === currentValue) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+            
+            // If no options, add a disabled placeholder
+            if (checkedVersions.length === 0) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'Select versions first';
+                option.disabled = true;
+                option.selected = true;
+                select.appendChild(option);
+            }
         }
     </script>
 </body>

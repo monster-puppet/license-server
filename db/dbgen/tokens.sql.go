@@ -41,24 +41,26 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) er
 }
 
 const createToken = `-- name: CreateToken :one
-INSERT INTO tokens (name, token, token_type, maya_versions) VALUES (?, ?, ?, ?) RETURNING id, name, token, token_type, maya_versions, created_at, updated_at
+INSERT INTO tokens (name, token, token_type, maya_versions, default_maya_version) VALUES (?, ?, ?, ?, ?) RETURNING id, name, token, token_type, maya_versions, default_maya_version, created_at, updated_at
 `
 
 type CreateTokenParams struct {
-	Name         string  `json:"name"`
-	Token        string  `json:"token"`
-	TokenType    string  `json:"token_type"`
-	MayaVersions *string `json:"maya_versions"`
+	Name               string  `json:"name"`
+	Token              string  `json:"token"`
+	TokenType          string  `json:"token_type"`
+	MayaVersions       *string `json:"maya_versions"`
+	DefaultMayaVersion *string `json:"default_maya_version"`
 }
 
 type CreateTokenRow struct {
-	ID           int64     `json:"id"`
-	Name         string    `json:"name"`
-	Token        string    `json:"token"`
-	TokenType    string    `json:"token_type"`
-	MayaVersions *string   `json:"maya_versions"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	ID                 int64     `json:"id"`
+	Name               string    `json:"name"`
+	Token              string    `json:"token"`
+	TokenType          string    `json:"token_type"`
+	MayaVersions       *string   `json:"maya_versions"`
+	DefaultMayaVersion *string   `json:"default_maya_version"`
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
 }
 
 func (q *Queries) CreateToken(ctx context.Context, arg CreateTokenParams) (CreateTokenRow, error) {
@@ -67,6 +69,7 @@ func (q *Queries) CreateToken(ctx context.Context, arg CreateTokenParams) (Creat
 		arg.Token,
 		arg.TokenType,
 		arg.MayaVersions,
+		arg.DefaultMayaVersion,
 	)
 	var i CreateTokenRow
 	err := row.Scan(
@@ -75,6 +78,7 @@ func (q *Queries) CreateToken(ctx context.Context, arg CreateTokenParams) (Creat
 		&i.Token,
 		&i.TokenType,
 		&i.MayaVersions,
+		&i.DefaultMayaVersion,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -100,17 +104,18 @@ func (q *Queries) DeleteToken(ctx context.Context, id int64) error {
 }
 
 const getAllTokens = `-- name: GetAllTokens :many
-SELECT id, name, token, token_type, maya_versions, created_at, updated_at FROM tokens ORDER BY token_type, name
+SELECT id, name, token, token_type, maya_versions, default_maya_version, created_at, updated_at FROM tokens ORDER BY token_type, name
 `
 
 type GetAllTokensRow struct {
-	ID           int64     `json:"id"`
-	Name         string    `json:"name"`
-	Token        string    `json:"token"`
-	TokenType    string    `json:"token_type"`
-	MayaVersions *string   `json:"maya_versions"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	ID                 int64     `json:"id"`
+	Name               string    `json:"name"`
+	Token              string    `json:"token"`
+	TokenType          string    `json:"token_type"`
+	MayaVersions       *string   `json:"maya_versions"`
+	DefaultMayaVersion *string   `json:"default_maya_version"`
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
 }
 
 func (q *Queries) GetAllTokens(ctx context.Context) ([]GetAllTokensRow, error) {
@@ -128,6 +133,7 @@ func (q *Queries) GetAllTokens(ctx context.Context) ([]GetAllTokensRow, error) {
 			&i.Token,
 			&i.TokenType,
 			&i.MayaVersions,
+			&i.DefaultMayaVersion,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -197,17 +203,18 @@ func (q *Queries) GetSession(ctx context.Context, id string) (GetSessionRow, err
 }
 
 const getTokenByName = `-- name: GetTokenByName :one
-SELECT id, name, token, token_type, maya_versions, created_at, updated_at FROM tokens WHERE name = ?
+SELECT id, name, token, token_type, maya_versions, default_maya_version, created_at, updated_at FROM tokens WHERE name = ?
 `
 
 type GetTokenByNameRow struct {
-	ID           int64     `json:"id"`
-	Name         string    `json:"name"`
-	Token        string    `json:"token"`
-	TokenType    string    `json:"token_type"`
-	MayaVersions *string   `json:"maya_versions"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	ID                 int64     `json:"id"`
+	Name               string    `json:"name"`
+	Token              string    `json:"token"`
+	TokenType          string    `json:"token_type"`
+	MayaVersions       *string   `json:"maya_versions"`
+	DefaultMayaVersion *string   `json:"default_maya_version"`
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
 }
 
 func (q *Queries) GetTokenByName(ctx context.Context, name string) (GetTokenByNameRow, error) {
@@ -219,6 +226,7 @@ func (q *Queries) GetTokenByName(ctx context.Context, name string) (GetTokenByNa
 		&i.Token,
 		&i.TokenType,
 		&i.MayaVersions,
+		&i.DefaultMayaVersion,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
