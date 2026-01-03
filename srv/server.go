@@ -873,15 +873,15 @@ func (s *Server) generatePackage(tokenName, tokenValue string, mayaVersions []st
 			relPath = strings.Replace(relPath, "newclient.mod", tokenName+".mod", 1)
 		}
 
-		// Handle the pbp folder rename to token name
-		if strings.Contains(relPath, "scripts/pbp") || strings.Contains(relPath, "scripts\\pbp") {
-			relPath = strings.Replace(relPath, "scripts/pbp", "scripts/"+tokenName, 1)
-			relPath = strings.Replace(relPath, "scripts\\pbp", "scripts\\"+tokenName, 1)
+		// Handle the newclient folder rename to token name
+		if strings.Contains(relPath, "scripts/newclient") || strings.Contains(relPath, "scripts\\newclient") {
+			relPath = strings.Replace(relPath, "scripts/newclient", "scripts/"+tokenName, 1)
+			relPath = strings.Replace(relPath, "scripts\\newclient", "scripts\\"+tokenName, 1)
 		}
 
-		// Handle shelf file rename (PBP -> tokenName)
-		if strings.Contains(relPath, "shelf_PBP_") {
-			relPath = strings.Replace(relPath, "shelf_PBP_", "shelf_"+tokenName+"_", 1)
+		// Handle shelf file rename (newclient -> tokenName)
+		if strings.Contains(relPath, "shelf_newclient_") {
+			relPath = strings.Replace(relPath, "shelf_newclient_", "shelf_"+tokenName+"_", 1)
 		}
 
 
@@ -926,24 +926,25 @@ func (s *Server) generatePackage(tokenName, tokenValue string, mayaVersions []st
 			return err
 
 		case baseName == "startup.py":
-			// Replace PBP references in startup.py
+			// Replace NEWCLIENT references in startup.py
 			content, err := os.ReadFile(path)
 			if err != nil {
 				return err
 			}
-			modified := strings.ReplaceAll(string(content), "PBP", strings.ToUpper(tokenName))
+			modified := strings.ReplaceAll(string(content), "NEWCLIENT", strings.ToUpper(tokenName))
+			modified = strings.ReplaceAll(modified, "newclient", tokenName)
 			_, err = writer.Write([]byte(modified))
 			return err
 
-		case strings.HasPrefix(baseName, "shelf_PBP_") && strings.HasSuffix(baseName, ".mel"):
-			// Replace PBP/pbp references in shelf mel files
+		case strings.HasPrefix(baseName, "shelf_newclient_") && strings.HasSuffix(baseName, ".mel"):
+			// Replace newclient references in shelf mel files
 			content, err := os.ReadFile(path)
 			if err != nil {
 				return err
 			}
-			modified := strings.ReplaceAll(string(content), "shelf_PBP_", "shelf_"+tokenName+"_")
-			modified = strings.ReplaceAll(modified, "pbp.", tokenName+".")
-			modified = strings.ReplaceAll(modified, "pbp_module", tokenName+"_module")
+			modified := strings.ReplaceAll(string(content), "shelf_newclient_", "shelf_"+tokenName+"_")
+			modified = strings.ReplaceAll(modified, "newclient.", tokenName+".")
+			modified = strings.ReplaceAll(modified, "newclient_module", tokenName+"_module")
 			_, err = writer.Write([]byte(modified))
 			return err
 

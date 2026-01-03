@@ -1,10 +1,10 @@
-global proc shelf_PBP_Rigging () {
+global proc shelf_newclient_Rigging () {
     global string $gBuffStr;
     global string $gBuffStr0;
     global string $gBuffStr1;
 
     // Auto-initialize module
-    python("import maya.cmds as cmds; cmds.evalDeferred(\"import sys, os; import maya.cmds as cmds; p = os.path.join(cmds.getModulePath(moduleName='pbp_module'), 'scripts'); sys.path.insert(0, p) if p not in sys.path else None; exec(open(os.path.join(p, 'userSetup.py')).read())\")");
+    python("import maya.cmds as cmds; cmds.evalDeferred(\"import sys, os; import maya.cmds as cmds; p = os.path.join(cmds.getModulePath(moduleName='newclient_module'), 'scripts'); sys.path.insert(0, p) if p not in sys.path else None; exec(open(os.path.join(p, 'userSetup.py')).read())\")");
 
 
     shelfButton
@@ -22,7 +22,7 @@ global proc shelf_PBP_Rigging () {
         -backgroundColor 0 0 0 
         -highlightColor 0.321569 0.521569 0.65098 
         -align "center" 
-        -label "import mk.maya.lib.ui.monster_puppet_ui as lib_ui\nimport pbp.app..." 
+        -label "import mk.maya.lib.ui.monster_puppet_ui as lib_ui\nimport newclient.app..." 
         -labelOffset 0
         -rotation 0
         -flipX 0
@@ -37,7 +37,7 @@ global proc shelf_PBP_Rigging () {
         -style "iconOnly" 
         -marginWidth 0
         -marginHeight 1
-        -command "import mk.maya.lib.ui.monster_puppet_ui as lib_ui\nimport pbp.app.helloworld.tool as tool\nimport importlib\nimportlib.reload(tool)\nlib_ui.run_and_show(tool.TestUI)" 
+        -command "import mk.maya.lib.ui.monster_puppet_ui as lib_ui\nimport newclient.app.helloworld.tool as tool\nimport importlib\nimportlib.reload(tool)\nlib_ui.run_and_show(tool.TestUI)" 
         -sourceType "python" 
         -commandRepeatable 1
         -flat 1
