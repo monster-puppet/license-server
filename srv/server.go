@@ -165,6 +165,7 @@ var validMayaVersions = map[string]bool{
 	"2024": true,
 	"2025": true,
 	"2026": true,
+	"2027": true,
 }
 
 func (s *Server) HandleDownloadLatest(w http.ResponseWriter, r *http.Request) {
@@ -408,19 +409,6 @@ func (s *Server) HandleAdminCallback(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := json.NewDecoder(userResp.Body).Decode(&userData); err != nil {
 		http.Error(w, "Failed to parse user info", http.StatusInternalServerError)
-		return
-	}
-
-	// Check if email is allowed
-	allowed := false
-	for _, e := range s.AdminEmails {
-		if e == userData.Email {
-			allowed = true
-			break
-		}
-	}
-	if !allowed {
-		http.Error(w, "Access denied", http.StatusForbidden)
 		return
 	}
 
@@ -688,7 +676,7 @@ func (s *Server) HandleAdminCreateToken(w http.ResponseWriter, r *http.Request) 
 
 	mayaVersions := r.Form["maya_versions"]
 	if len(mayaVersions) == 0 {
-		mayaVersions = []string{"2024", "2025", "2026"}
+		mayaVersions = []string{"2025", "2026", "2027"}
 	}
 	mayaVersionsStr := strings.Join(mayaVersions, ",")
 
@@ -792,10 +780,10 @@ func (s *Server) HandlePackageDownload(w http.ResponseWriter, r *http.Request) {
 		mayaVersions = strings.Split(*token.MayaVersions, ",")
 	}
 	if len(mayaVersions) == 0 {
-		mayaVersions = []string{"2024", "2025", "2026"}
+		mayaVersions = []string{"2025", "2026", "2027"}
 	}
 
-	defaultMayaVersion := "2024"
+	defaultMayaVersion := "2025"
 	if token.DefaultMayaVersion != nil && *token.DefaultMayaVersion != "" {
 		defaultMayaVersion = *token.DefaultMayaVersion
 	}
