@@ -3,6 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <link rel="icon" href="/static/favicon.png" type="image/png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/shell/shell.min.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Template Editor - Package Manager</title>
     <style>
@@ -272,6 +277,23 @@
         #editor:focus {
             outline: none;
         }
+        /* CodeMirror styling */
+        .CodeMirror {
+            height: 100%;
+            font-family: 'JetBrains Mono', 'Fira Code', 'Monaco', 'Consolas', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            background: #0a0a0a;
+        }
+        .CodeMirror-gutters {
+            background: #0a0a0a;
+            border-right: 1px solid #252525;
+        }
+        .cm-wrapper {
+            width: 100%;
+            height: 100%;
+            display: none;
+        }
         .placeholder {
             flex: 1;
             display: flex;
@@ -491,6 +513,7 @@
                     <div>Binary file - cannot be edited</div>
                 </div>
                 <textarea id="editor" style="display: none;" spellcheck="false"></textarea>
+                <div class="cm-wrapper" id="cmWrapper"></div>
             </div>
         </div>
     </div>
@@ -523,6 +546,7 @@
         let isModified = false;
         let contextMenuTarget = null;
         let currentFolder = '';
+        let cmEditor = null;  // CodeMirror instance
 
         const editor = document.getElementById('editor');
         const placeholder = document.getElementById('placeholder');
@@ -536,6 +560,30 @@
         const newFileName = document.getElementById('newFileName');
         const newFileError = document.getElementById('newFileError');
         const newFilePath = document.getElementById('newFilePath');
+        const cmWrapper = document.getElementById('cmWrapper');
+
+        function getEditorMode(filename) {
+            if (filename.endsWith('.py')) return 'python';
+            if (filename.endsWith('.bat') || filename.endsWith('.cmd')) return 'shell';
+            return null;
+        }
+
+        function useCodeMirror(filename) {
+            return getEditorMode(filename) !== null;
+        }
+
+        function getEditorValue() {
+            if (cmEditor) return cmEditor.getValue();
+            return editor.value;
+        }
+
+        function setEditorValue(content) {
+            if (cmEditor) {
+                cmEditor.setValue(content);
+            } else {
+                editor.value = content;
+            }
+        }
 
         // Load initial file tree
         loadFileTree();
@@ -583,6 +631,11 @@
                     originalContent = '';
                     isModified = false;
                     editor.style.display = 'none';
+                    cmWrapper.style.display = 'none';
+                    if (cmEditor) {
+                        cmEditor.toTextArea();
+                        cmEditor = null;
+                    }
                     placeholder.style.display = 'flex';
                     editorHeader.style.display = 'none';
                 }
@@ -748,6 +801,11 @@
             placeholder.style.display = 'none';
             binaryNotice.style.display = 'none';
             editor.style.display = 'none';
+            cmWrapper.style.display = 'none';
+            if (cmEditor) {
+                cmEditor.toTextArea();
+                cmEditor = null;
+            }
             editorStatus.textContent = 'Loading...';
             editorStatus.className = 'status';
 
@@ -768,8 +826,49 @@
 
                 const content = await resp.text();
                 originalContent = content;
-                editor.value = content;
-                editor.style.display = 'block';
+                
+                const mode = getEditorMode(path);
+                if (mode) {
+                    // Use CodeMirror for .py and .bat files
+                    cmWrapper.style.display = 'block';
+                    cmWrapper.innerHTML = '<textarea id="cm-textarea"></textarea>';
+                    const cmTextarea = document.getElementById('cm-textarea');
+                    cmTextarea.value = content;
+                    cmEditor = CodeMirror.fromTextArea(cmTextarea, {
+                        mode: mode,
+                        theme: 'material-darker',
+                        lineNumbers: true,
+                        indentUnit: 4,
+                        tabSize: 4,
+                        indentWithTabs: false,
+                        lineWrapping: false,
+                        extraKeys: {
+                            'Tab': function(cm) {
+                                cm.replaceSelection('    ', 'end');
+                            },
+                            'Ctrl-S': function(cm) {
+                                if (isModified) saveFile();
+                            },
+                            'Cmd-S': function(cm) {
+                                if (isModified) saveFile();
+                            }
+                        }
+                    });
+                    cmEditor.on('change', function() {
+                        const modified = cmEditor.getValue() !== originalContent;
+                        if (modified !== isModified) {
+                            isModified = modified;
+                            saveBtn.disabled = !modified;
+                            editorStatus.textContent = modified ? 'Modified' : '';
+                            editorStatus.className = modified ? 'status modified' : 'status';
+                        }
+                    });
+                } else {
+                    // Use plain textarea for other files
+                    editor.value = content;
+                    editor.style.display = 'block';
+                }
+                
                 editorStatus.textContent = '';
                 isModified = false;
                 saveBtn.disabled = true;
@@ -794,13 +893,14 @@
             editorStatus.className = 'status';
             saveBtn.disabled = true;
 
+            const content = getEditorValue();
             try {
                 const resp = await fetch('/api/template/file', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         path: currentFile,
-                        content: editor.value
+                        content: content
                     })
                 });
 
@@ -809,7 +909,7 @@
                     throw new Error(data.error || 'Failed to save');
                 }
 
-                originalContent = editor.value;
+                originalContent = content;
                 isModified = false;
                 editorStatus.textContent = 'Saved!';
                 editorStatus.className = 'status saved';
