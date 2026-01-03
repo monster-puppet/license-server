@@ -370,6 +370,11 @@
             border-color: #e74c3c;
             color: #e74c3c;
         }
+        .btn-logo {
+            height: 16px;
+            width: auto;
+            vertical-align: middle;
+        }
 
         /* Mobile styles */
         @media (max-width: 600px) {
@@ -481,7 +486,7 @@
                             <button type="submit" class="btn-action">🔄 Regenerate</button>
                         </form>
                         {{if eq .TokenType "download"}}
-                        <a href="/package/{{.Name}}" class="btn-action">⬇️ Download</a>
+                        <a href="/package/{{.Name}}" class="btn-action"><img src="/static/maya-logo.png" alt="" class="btn-logo">Download</a>
                         <form method="POST" action="/token/delete" style="display:inline-block; margin:0" onsubmit="return confirm('Delete this token?')">
                             <input type="hidden" name="id" value="{{.ID}}">
                             <button type="submit" class="btn-action btn-action-danger">❌ Delete</button>
@@ -512,7 +517,7 @@
                         <button type="submit" class="btn-action">🔄 Regenerate</button>
                     </form>
                     {{if eq .TokenType "download"}}
-                    <a href="/package/{{.Name}}" class="btn-action">⬇️ Download</a>
+                    <a href="/package/{{.Name}}" class="btn-action"><img src="/static/maya-logo.png" alt="" class="btn-logo">Download</a>
                     <form method="POST" action="/token/delete" style="margin:0" onsubmit="return confirm('Delete this token?')">
                         <input type="hidden" name="id" value="{{.ID}}">
                         <button type="submit" class="btn-action btn-action-danger">❌ Delete</button>

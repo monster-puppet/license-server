@@ -875,6 +875,7 @@ func (s *Server) Serve(addr string) error {
 	mux.HandleFunc("POST /upload/template", s.HandleUploadTemplate)
 	mux.HandleFunc("GET /upload/history", s.HandleUploadHistory)
 	mux.HandleFunc("GET /package/{name}", s.HandlePackageDownload)
+	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir(filepath.Join(s.TemplatesDir, "..", "static")))))
 
 	// Admin routes
 	mux.HandleFunc("GET /login", s.HandleAdminLogin)
