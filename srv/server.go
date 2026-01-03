@@ -921,7 +921,8 @@ func (s *Server) generatePackage(tokenName, tokenValue string, mayaVersions []st
 				return err
 			}
 			modified := strings.Replace(string(content), "NEW CLIENT MAYA TOOLS", tokenName, 1)
-			modified = strings.Replace(modified, "NewClientModule", tokenName+"_module", 1)
+			modified = strings.Replace(modified, "NEWCLIENT", strings.ToUpper(tokenName), 1)
+			modified = strings.Replace(modified, "newclient_module", tokenName+"_module", 1)
 			_, err = writer.Write([]byte(modified))
 			return err
 
