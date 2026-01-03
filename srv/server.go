@@ -796,6 +796,7 @@ func (s *Server) generatePackage(tokenName, tokenValue string, mayaVersions []st
 			}
 			modified := strings.ReplaceAll(string(content), "shelf_PBP_", "shelf_"+tokenName+"_")
 			modified = strings.ReplaceAll(modified, "pbp.", tokenName+".")
+			modified = strings.ReplaceAll(modified, "pbp_module", tokenName+"_module")
 			_, err = writer.Write([]byte(modified))
 			return err
 
