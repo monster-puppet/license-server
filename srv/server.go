@@ -218,9 +218,11 @@ func (s *Server) HandleDownloadLatest(w http.ResponseWriter, r *http.Request) {
 		if mayaVersion != "" {
 			mayaVersionPtr = &mayaVersion
 		}
+		ipAddress := getClientIP(r)
 		q.AddDownloadHistory(r.Context(), dbgen.AddDownloadHistoryParams{
 			TokenName:    tokenName,
 			MayaVersion:  mayaVersionPtr,
+			IpAddress:    &ipAddress,
 			DownloadedAt: time.Now(),
 		})
 		q.TrimDownloadHistory(r.Context())
@@ -654,6 +656,28 @@ func generateToken() string {
 		b[i] = charset[int(b[i])%len(charset)]
 	}
 	return string(b)
+}
+
+func getClientIP(r *http.Request) string {
+	// Check X-Forwarded-For header first (for proxied requests)
+	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+		// X-Forwarded-For can contain multiple IPs, take the first one
+		if idx := strings.Index(xff, ","); idx != -1 {
+			return strings.TrimSpace(xff[:idx])
+		}
+		return strings.TrimSpace(xff)
+	}
+	// Check X-Real-IP header
+	if xri := r.Header.Get("X-Real-IP"); xri != "" {
+		return xri
+	}
+	// Fall back to RemoteAddr
+	ip := r.RemoteAddr
+	// Remove port if present
+	if idx := strings.LastIndex(ip, ":"); idx != -1 {
+		ip = ip[:idx]
+	}
+	return ip
 }
 
 func (s *Server) HandleAdminCreateToken(w http.ResponseWriter, r *http.Request) {

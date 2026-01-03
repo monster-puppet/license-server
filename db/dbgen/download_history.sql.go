@@ -11,37 +11,52 @@ import (
 )
 
 const addDownloadHistory = `-- name: AddDownloadHistory :exec
-INSERT INTO download_history (token_name, maya_version, downloaded_at) VALUES (?, ?, ?)
+INSERT INTO download_history (token_name, maya_version, ip_address, downloaded_at) VALUES (?, ?, ?, ?)
 `
 
 type AddDownloadHistoryParams struct {
 	TokenName    string    `json:"token_name"`
 	MayaVersion  *string   `json:"maya_version"`
+	IpAddress    *string   `json:"ip_address"`
 	DownloadedAt time.Time `json:"downloaded_at"`
 }
 
 func (q *Queries) AddDownloadHistory(ctx context.Context, arg AddDownloadHistoryParams) error {
-	_, err := q.db.ExecContext(ctx, addDownloadHistory, arg.TokenName, arg.MayaVersion, arg.DownloadedAt)
+	_, err := q.db.ExecContext(ctx, addDownloadHistory,
+		arg.TokenName,
+		arg.MayaVersion,
+		arg.IpAddress,
+		arg.DownloadedAt,
+	)
 	return err
 }
 
 const getDownloadHistory = `-- name: GetDownloadHistory :many
-SELECT id, token_name, maya_version, downloaded_at FROM download_history ORDER BY downloaded_at DESC LIMIT ?
+SELECT id, token_name, maya_version, ip_address, downloaded_at FROM download_history ORDER BY downloaded_at DESC LIMIT ?
 `
 
-func (q *Queries) GetDownloadHistory(ctx context.Context, limit int64) ([]DownloadHistory, error) {
+type GetDownloadHistoryRow struct {
+	ID           int64     `json:"id"`
+	TokenName    string    `json:"token_name"`
+	MayaVersion  *string   `json:"maya_version"`
+	IpAddress    *string   `json:"ip_address"`
+	DownloadedAt time.Time `json:"downloaded_at"`
+}
+
+func (q *Queries) GetDownloadHistory(ctx context.Context, limit int64) ([]GetDownloadHistoryRow, error) {
 	rows, err := q.db.QueryContext(ctx, getDownloadHistory, limit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []DownloadHistory{}
+	items := []GetDownloadHistoryRow{}
 	for rows.Next() {
-		var i DownloadHistory
+		var i GetDownloadHistoryRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.TokenName,
 			&i.MayaVersion,
+			&i.IpAddress,
 			&i.DownloadedAt,
 		); err != nil {
 			return nil, err

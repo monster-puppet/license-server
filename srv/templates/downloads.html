@@ -224,6 +224,7 @@
                     <tr>
                         <td><strong>${item.token_name}</strong></td>
                         <td>${item.maya_version ? '<span class="badge badge-version">Maya ' + item.maya_version + '</span>' : '<span class="badge">generic</span>'}</td>
+                        <td><code style="color: #888; font-size: 12px;">${item.ip_address || '-'}</code></td>
                         <td>${formatDate(item.downloaded_at)}</td>
                     </tr>
                 `).join('');
@@ -234,6 +235,7 @@
                             <tr>
                                 <th>Client</th>
                                 <th>Version</th>
+                                <th>IP Address</th>
                                 <th>Downloaded</th>
                             </tr>
                         </thead>

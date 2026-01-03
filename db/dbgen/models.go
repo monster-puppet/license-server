@@ -13,6 +13,7 @@ type DownloadHistory struct {
 	TokenName    string    `json:"token_name"`
 	MayaVersion  *string   `json:"maya_version"`
 	DownloadedAt time.Time `json:"downloaded_at"`
+	IpAddress    *string   `json:"ip_address"`
 }
 
 type Migration struct {
