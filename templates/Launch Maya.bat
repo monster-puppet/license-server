@@ -1,12 +1,12 @@
 @echo off
-setlocal
 
 set "version=2024"
 
-call :getRegKey regKey
+set "regKey=HKEY_LOCAL_MACHINE\SOFTWARE\Autodesk\Maya\%version%\Setup\InstallPath"
 set "current_folder=%~dp0"
 set "maya_root_path=%current_folder%Tools\Maya"
 set "MAYA_MODULE_PATH=%current_folder%Tools\Maya"
+set "MAYA_PROJECT=R:\"
 
 :: Check if the Maya Registry Key exists
 reg query "%regKey%" /v MAYA_INSTALL_LOCATION > nul 2>&1
@@ -33,30 +33,15 @@ if not exist "%mayaPath%\bin\maya.exe" (
 "%mayaPath%\bin\mayapy.exe" -m pip install --upgrade pip
 "%mayaPath%\bin\mayapy.exe" -m pip install -r "R:\Tools\Maya\requirements.txt"
 
-:: Recursively find all .mod files and extend MAYA_MODULE_PATH
-setlocal enabledelayedexpansion
+:: Find all .mod files and add their directories
 for /r "%MAYA_MODULE_PATH%" %%i in (*.mod) do (
-    set "module_dir=%%~dpi"
-    set "module_dir=!module_dir:~0,-1!"
-    echo Module detected in: !module_dir!
-    set "MAYA_MODULE_PATH=!MAYA_MODULE_PATH!;!module_dir!"
+    echo Module detected in: %%~dpi
 )
 
-set "MAYA_PROJECT=R:\"
+echo.
+echo MAYA_MODULE_PATH = %MAYA_MODULE_PATH%
+echo.
 
-:: Launch Maya - use endlocal with variable passthrough
-for /f "delims=" %%M in ("!MAYA_MODULE_PATH!") do (
-    for /f "delims=" %%P in ("!mayaPath!") do (
-        endlocal
-        endlocal
-        set "MAYA_MODULE_PATH=%%M"
-        set "MAYA_PROJECT=R:\"
-        cd /d "%%P\bin"
-        start "" /min "%%P\bin\maya.exe"
-    )
-)
-goto :eof
-
-:getRegKey
-set "%1=HKEY_LOCAL_MACHINE\SOFTWARE\Autodesk\Maya\%version%\Setup\InstallPath"
-goto :eof
+:: Launch Maya directly (not with start) so it inherits environment
+cd /d "%mayaPath%\bin"
+"%mayaPath%\bin\maya.exe"
