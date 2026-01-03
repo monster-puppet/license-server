@@ -38,6 +38,7 @@ type Token struct {
 	UpdatedAt          time.Time `json:"updated_at"`
 	MayaVersions       *string   `json:"maya_versions"`
 	DefaultMayaVersion *string   `json:"default_maya_version"`
+	SceneSettings      *string   `json:"scene_settings"`
 }
 
 type UploadHistory struct {

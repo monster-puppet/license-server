@@ -685,6 +685,21 @@ func (s *Server) HandleAdminCreateToken(w http.ResponseWriter, r *http.Request) 
 		defaultMayaVersion = mayaVersions[0] // Default to first selected version
 	}
 
+	// Scene settings
+	sceneAxis := r.FormValue("scene_axis")
+	if sceneAxis == "" {
+		sceneAxis = "y"
+	}
+	sceneFps := r.FormValue("scene_fps")
+	if sceneFps == "" {
+		sceneFps = "ntsc"
+	}
+	sceneUnit := r.FormValue("scene_unit")
+	if sceneUnit == "" {
+		sceneUnit = "cm"
+	}
+	sceneSettings := fmt.Sprintf(`{"axis": "%s", "fps": "%s", "unit": "%s"}`, sceneAxis, sceneFps, sceneUnit)
+
 	tokenValue := generateToken()
 
 	q := dbgen.New(s.DB)
@@ -694,6 +709,7 @@ func (s *Server) HandleAdminCreateToken(w http.ResponseWriter, r *http.Request) 
 		TokenType:          "download",
 		MayaVersions:       &mayaVersionsStr,
 		DefaultMayaVersion: &defaultMayaVersion,
+		SceneSettings:      &sceneSettings,
 	})
 	if err != nil {
 		http.Error(w, "Failed to create token: "+err.Error(), http.StatusInternalServerError)
@@ -813,8 +829,13 @@ func (s *Server) HandlePackageDownload(w http.ResponseWriter, r *http.Request) {
 		defaultMayaVersion = *token.DefaultMayaVersion
 	}
 
+	sceneSettings := `{"axis": "y", "fps": "ntsc", "unit": "cm"}`
+	if token.SceneSettings != nil && *token.SceneSettings != "" {
+		sceneSettings = *token.SceneSettings
+	}
+
 	// Generate the package
-	zipData, err := s.generatePackage(tokenName, token.Token, mayaVersions, defaultMayaVersion)
+	zipData, err := s.generatePackage(tokenName, token.Token, mayaVersions, defaultMayaVersion, sceneSettings)
 	if err != nil {
 		slog.Error("Failed to generate package", "error", err)
 		http.Error(w, "Failed to generate package: "+err.Error(), http.StatusInternalServerError)
@@ -826,7 +847,7 @@ func (s *Server) HandlePackageDownload(w http.ResponseWriter, r *http.Request) {
 	w.Write(zipData)
 }
 
-func (s *Server) generatePackage(tokenName, tokenValue string, mayaVersions []string, defaultMayaVersion string) ([]byte, error) {
+func (s *Server) generatePackage(tokenName, tokenValue string, mayaVersions []string, defaultMayaVersion string, sceneSettings string) ([]byte, error) {
 	templateDir := "/home/exedev/hubv2/templates"
 
 	// Check if template exists
@@ -923,6 +944,11 @@ func (s *Server) generatePackage(tokenName, tokenValue string, mayaVersions []st
 			modified := strings.Replace(string(content), "NEW CLIENT MAYA TOOLS", tokenName, 1)
 			modified = strings.Replace(modified, "NEWCLIENT", strings.ToUpper(tokenName), 1)
 			modified = strings.Replace(modified, "newclient_module", tokenName+"_module", 1)
+			// Replace scene settings - convert JSON to Python dict format
+			// sceneSettings is like: {"axis": "y", "fps": "ntsc", "unit": "cm"}
+			// Python format is: {'axis': 'y', 'fps': 'ntsc', 'unit': 'cm'}
+			pythonSettings := strings.ReplaceAll(sceneSettings, `"`, `'`)
+			modified = strings.Replace(modified, "{'axis': 'y', 'fps': 'ntsc', 'unit': 'cm'}", pythonSettings, 1)
 			_, err = writer.Write([]byte(modified))
 			return err
 

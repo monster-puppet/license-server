@@ -257,6 +257,44 @@
                     <option value="2027">2027</option>
                 </select>
             </div>
+            <div class="maya-versions">
+                <label>Default Scene Settings:</label>
+                <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 8px;">
+                    <div>
+                        <label style="color: #888; font-size: 12px; display: block; margin-bottom: 4px;">Up Axis</label>
+                        <select name="scene_axis" class="version-select">
+                            <option value="y" selected>Y-up</option>
+                            <option value="z">Z-up</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="color: #888; font-size: 12px; display: block; margin-bottom: 4px;">Frame Rate (FPS)</label>
+                        <select name="scene_fps" class="version-select">
+                            <option value="game">15 fps (game)</option>
+                            <option value="film">24 fps (film)</option>
+                            <option value="pal">25 fps (pal)</option>
+                            <option value="ntsc" selected>30 fps (ntsc)</option>
+                            <option value="show">48 fps (show)</option>
+                            <option value="palf">50 fps (palf)</option>
+                            <option value="ntscf">60 fps (ntscf)</option>
+                            <option value="23.976fps">23.976 fps</option>
+                            <option value="29.97fps">29.97 fps</option>
+                            <option value="29.97df">29.97 fps (drop frame)</option>
+                            <option value="47.952fps">47.952 fps</option>
+                            <option value="59.94fps">59.94 fps</option>
+                            <option value="44100fps">44100 fps (audio)</option>
+                            <option value="48000fps">48000 fps (audio)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="color: #888; font-size: 12px; display: block; margin-bottom: 4px;">Linear Unit</label>
+                        <select name="scene_unit" class="version-select">
+                            <option value="cm" selected>Centimeters</option>
+                            <option value="m">Meters</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
             <div class="form-row" style="margin-top: 15px;">
                 <button type="submit" class="btn-primary">Create Package</button>
             </div>
