@@ -840,7 +840,7 @@ func (s *Server) generatePackage(tokenName, tokenValue string, mayaVersions []st
 func (s *Server) generateModContent(tokenName string, mayaVersions []string) string {
 	var blocks []string
 	for _, version := range mayaVersions {
-		block := fmt.Sprintf("+ MAYAVERSION:%s %s_module 1.0.0 .\r\nscripts: scripts\r\nMAYA_SHELF_PATH+:=shelves\r\nMAYA_NO_WARNING_FOR_MISSING_DEFAULT_RENDERER=1\r\nMAYA_CM_DISABLE_ERROR_POPUPS=1\r\nMEL: evalDeferred(\"python(\\\"import maya.cmds as cmds; cmds.evalDeferred(\\\\\\\"import sys, os; p = os.path.join(cmds.getModulePath(moduleName='%s_module'), 'scripts'); sys.path.insert(0, p) if p not in sys.path else None; exec(open(os.path.join(p, 'userSetup.py')).read())\\\\\\\")\\\")\")", version, tokenName, tokenName)
+		block := fmt.Sprintf("+ MAYAVERSION:%s %s_module 1.0.0 .\r\nscripts: scripts\r\nMAYA_SHELF_PATH+:=shelves\r\nMAYA_NO_WARNING_FOR_MISSING_DEFAULT_RENDERER=1\r\nMAYA_CM_DISABLE_ERROR_POPUPS=1", version, tokenName)
 		blocks = append(blocks, block)
 	}
 	return strings.Join(blocks, "\r\n\r\n") + "\r\n"
