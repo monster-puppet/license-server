@@ -19,7 +19,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             padding-bottom: 20px;
             border-bottom: 1px solid #333;
             flex-wrap: wrap;
@@ -62,7 +62,7 @@
         .nav-link {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             padding: 8px 16px;
             border-radius: 6px;
             background: #1a1a1a;
@@ -71,11 +71,14 @@
             font-size: 14px;
             transition: all 0.2s;
         }
-        .nav-icon {
-            color: #e74c3c;
-        }
-        .nav-link.active .nav-icon {
-            color: #fff;
+        .nav-link svg {
+            width: 16px;
+            height: 16px;
+            fill: none;
+            stroke: #e74c3c;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
         }
         .nav-link:hover {
             background: #252525;
@@ -85,6 +88,9 @@
         .nav-link.active {
             background: #e74c3c;
             color: #fff;
+        }
+        .nav-link.active svg {
+            stroke: #fff;
         }
         .card {
             background: #151515;
@@ -99,7 +105,6 @@
             font-size: 18px;
             font-weight: 500;
         }
-        /* Desktop table */
         .tokens-table {
             width: 100%;
             border-collapse: collapse;
@@ -110,7 +115,6 @@
             border-bottom: 1px solid #252525;
         }
         .tokens-table th { color: #888; font-weight: 500; }
-        /* Mobile cards */
         .token-cards {
             display: none;
         }
@@ -162,9 +166,6 @@
             outline: none;
             border-color: #e74c3c;
         }
-        input[type="text"]::placeholder {
-            color: #555;
-        }
         button {
             padding: 10px 18px;
             border: none;
@@ -179,30 +180,12 @@
             color: white;
         }
         .btn-primary:hover { background: #c0392b; }
-        .btn-danger {
-            background: transparent;
-            color: #e74c3c;
-            border: 1px solid #e74c3c;
-        }
-        .btn-danger:hover { background: #e74c3c; color: white; }
-        .btn-secondary {
-            background: #333;
-            color: #e0e0e0;
-        }
-        .btn-secondary:hover { background: #444; }
-        .form-row {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        .form-row input[type="text"] { flex: 1; }
         .token-value {
             font-family: monospace;
             font-size: 12px;
             background: #1a1a1a;
             padding: 10px;
             border-radius: 4px;
-            word-break: break-all;
             color: #888;
             display: flex;
             align-items: center;
@@ -227,31 +210,10 @@
         .btn-show:hover {
             color: #fff;
         }
-        .protected-label {
-            color: #555;
-            font-size: 12px;
-            font-style: italic;
-        }
         .file-info {
             padding: 15px;
             background: #1a1a1a;
             border-radius: 6px;
-        }
-        .file-name {
-            font-size: 18px;
-            font-weight: 500;
-            color: #fff;
-            margin-bottom: 10px;
-        }
-        .file-meta {
-            display: flex;
-            gap: 30px;
-            color: #888;
-            font-size: 14px;
-            flex-wrap: wrap;
-        }
-        .file-meta strong {
-            color: #aaa;
         }
         .file-empty {
             color: #555;
@@ -268,15 +230,35 @@
             border: 1px solid #252525;
             border-radius: 6px;
             padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .version-file svg {
+            width: 24px;
+            height: 24px;
+            fill: none;
+            stroke: #e74c3c;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            flex-shrink: 0;
+        }
+        .version-file-info {
+            flex: 1;
         }
         .version-file .file-name {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 500;
             color: #fff;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
         }
         .version-file .file-meta {
-            font-size: 13px;
+            font-size: 12px;
+            color: #888;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
         }
         .btn-history {
             margin-top: 15px;
@@ -385,44 +367,6 @@
             text-align: center;
             padding: 30px;
         }
-        .maya-versions {
-            margin: 15px 0;
-        }
-        .maya-versions label:first-child {
-            color: #888;
-            display: block;
-            margin-bottom: 10px;
-        }
-        .checkbox-group {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-        .checkbox-label {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            color: #e0e0e0;
-            cursor: pointer;
-        }
-        .checkbox-label input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            accent-color: #e74c3c;
-        }
-        .version-select {
-            padding: 8px 12px;
-            border: 1px solid #333;
-            border-radius: 4px;
-            background: #1a1a1a;
-            color: #e0e0e0;
-            font-size: 14px;
-            cursor: pointer;
-        }
-        .version-select:focus {
-            outline: none;
-            border-color: #e74c3c;
-        }
         .action-buttons {
             display: flex;
             align-items: center;
@@ -446,23 +390,26 @@
             transition: all 0.2s;
             white-space: nowrap;
         }
+        .btn-action svg {
+            width: 14px;
+            height: 14px;
+            fill: none;
+            stroke: #e74c3c;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
         .btn-action:hover {
             background: #2a2a2a;
             border-color: #444;
             color: #fff;
+            text-decoration: none;
         }
         .btn-action-danger:hover {
             background: #3a1a1a;
             border-color: #e74c3c;
             color: #e74c3c;
         }
-        .btn-logo {
-            height: 16px;
-            width: auto;
-            vertical-align: middle;
-        }
-
-        /* Mobile styles */
         @media (max-width: 600px) {
             body {
                 padding: 15px;
@@ -473,28 +420,11 @@
             .logo {
                 height: 40px;
             }
-
             .tokens-table {
                 display: none;
             }
             .token-cards {
                 display: block;
-            }
-            .form-row {
-                flex-direction: column;
-            }
-            .form-row button {
-                width: 100%;
-            }
-            .file-meta {
-                flex-direction: column;
-                gap: 8px;
-            }
-            .token-input-group {
-                flex-direction: column;
-            }
-            .token-input-group button {
-                width: 100%;
             }
             .token-card-actions {
                 flex-direction: column;
@@ -502,8 +432,10 @@
             .token-card-actions form {
                 width: 100%;
             }
-            .token-card-actions button {
+            .token-card-actions button,
+            .token-card-actions a {
                 width: 100%;
+                justify-content: center;
             }
         }
     </style>
@@ -521,9 +453,18 @@
     </div>
 
     <nav class="navbar">
-        <a href="/" class="nav-link active"><span class="nav-icon">📦</span> Packages</a>
-        <a href="/create" class="nav-link"><span class="nav-icon">➕</span> Create</a>
-        <a href="/downloads" class="nav-link"><span class="nav-icon">📥</span> Downloads</a>
+        <a href="/" class="nav-link active">
+            <svg viewBox="0 0 24 24"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+            Packages
+        </a>
+        <a href="/create" class="nav-link">
+            <svg viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
+            Create
+        </a>
+        <a href="/downloads" class="nav-link">
+            <svg viewBox="0 0 24 24"><path d="M12 4v12m0 0l-4-4m4 4l4-4M4 17v2a1 1 0 001 1h14a1 1 0 001-1v-2"/></svg>
+            Downloads
+        </a>
     </nav>
 
     <div class="card">
@@ -533,26 +474,28 @@
             <div class="version-files-grid">
                 {{range .VersionFiles}}
                 <div class="version-file">
-                    <div class="file-name">📦 mk_{{.MayaVersion}}.zip</div>
-                    <div class="file-meta">
-                        <span><strong>Maya:</strong> {{.MayaVersion}}</span>
-                        <span><strong>Size:</strong> {{.Size}}</span>
-                        <span><strong>Modified:</strong> {{.Modified}}</span>
+                    <svg viewBox="0 0 24 24"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                    <div class="version-file-info">
+                        <div class="file-name">mk_{{.MayaVersion}}.zip</div>
+                        <div class="file-meta">
+                            <span>Maya {{.MayaVersion}}</span>
+                            <span>{{.Size}}</span>
+                            <span>{{.Modified}}</span>
+                        </div>
                     </div>
                 </div>
                 {{end}}
             </div>
-            <button class="btn-history" onclick="showHistory()">📜 View Upload History</button>
+            <button class="btn-history" onclick="showHistory()">View Upload History</button>
             {{else}}
             <div class="file-empty">No packages uploaded yet</div>
-            <button class="btn-history" onclick="showHistory()">📜 View Upload History</button>
+            <button class="btn-history" onclick="showHistory()">View Upload History</button>
             {{end}}
         </div>
     </div>
 
     <div class="card">
         <h2>Client Packages</h2>
-        <!-- Desktop table -->
         <table class="tokens-table">
             <thead>
                 <tr>
@@ -579,13 +522,22 @@
                         <div class="action-buttons">
                             <form method="POST" action="/token/regenerate" onsubmit="return confirmRegenerate(this, '{{.Name}}')">
                                 <input type="hidden" name="id" value="{{.ID}}">
-                                <button type="submit" class="btn-action">🔄 Regenerate</button>
+                                <button type="submit" class="btn-action">
+                                    <svg viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                    Regenerate
+                                </button>
                             </form>
                             {{if eq .TokenType "download"}}
-                            <a href="/package/{{.Name}}" class="btn-action">📦 Download</a>
+                            <a href="/package/{{.Name}}" class="btn-action">
+                                <svg viewBox="0 0 24 24"><path d="M12 4v12m0 0l-4-4m4 4l4-4M4 17v2a1 1 0 001 1h14a1 1 0 001-1v-2"/></svg>
+                                Download
+                            </a>
                             <form method="POST" action="/token/delete" onsubmit="return confirm('Delete this token?')">
                                 <input type="hidden" name="id" value="{{.ID}}">
-                                <button type="submit" class="btn-action btn-action-danger">❌ Delete</button>
+                                <button type="submit" class="btn-action btn-action-danger">
+                                    <svg viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    Delete
+                                </button>
                             </form>
                             {{end}}
                         </div>
@@ -594,7 +546,6 @@
                 {{end}}
             </tbody>
         </table>
-        <!-- Mobile cards -->
         <div class="token-cards">
             {{range .Tokens}}
             <div class="token-card">
@@ -609,15 +560,24 @@
                     </div>
                 </div>
                 <div class="token-card-actions">
-                    <form method="POST" action="/token/regenerate" style="margin:0" onsubmit="return confirmRegenerate(this, '{{.Name}}')">
+                    <form method="POST" action="/token/regenerate" onsubmit="return confirmRegenerate(this, '{{.Name}}')">
                         <input type="hidden" name="id" value="{{.ID}}">
-                        <button type="submit" class="btn-action">🔄 Regenerate</button>
+                        <button type="submit" class="btn-action">
+                            <svg viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                            Regenerate
+                        </button>
                     </form>
                     {{if eq .TokenType "download"}}
-                    <a href="/package/{{.Name}}" class="btn-action">📦 Download</a>
-                    <form method="POST" action="/token/delete" style="margin:0" onsubmit="return confirm('Delete this token?')">
+                    <a href="/package/{{.Name}}" class="btn-action">
+                        <svg viewBox="0 0 24 24"><path d="M12 4v12m0 0l-4-4m4 4l4-4M4 17v2a1 1 0 001 1h14a1 1 0 001-1v-2"/></svg>
+                        Download
+                    </a>
+                    <form method="POST" action="/token/delete" onsubmit="return confirm('Delete this token?')">
                         <input type="hidden" name="id" value="{{.ID}}">
-                        <button type="submit" class="btn-action btn-action-danger">❌ Delete</button>
+                        <button type="submit" class="btn-action btn-action-danger">
+                            <svg viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            Delete
+                        </button>
                     </form>
                     {{end}}
                 </div>
@@ -626,11 +586,10 @@
         </div>
     </div>
 
-    <!-- Upload History Modal -->
     <div class="modal-overlay" id="historyModal">
         <div class="modal">
             <div class="modal-header">
-                <h3>📜 Upload History</h3>
+                <h3>Upload History</h3>
                 <button class="modal-close" onclick="hideHistory()">&times;</button>
             </div>
             <div class="modal-body">
@@ -693,12 +652,10 @@
             document.getElementById('historyModal').classList.remove('active');
         }
 
-        // Close modal when clicking outside
         document.getElementById('historyModal').addEventListener('click', function(e) {
             if (e.target === this) hideHistory();
         });
 
-        // Close modal on Escape key
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') hideHistory();
         });
@@ -726,7 +683,6 @@
             }
             return false;
         }
-
     </script>
 </body>
 </html>

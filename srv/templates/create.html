@@ -62,7 +62,7 @@
         .nav-link {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             padding: 8px 16px;
             border-radius: 6px;
             background: #1a1a1a;
@@ -70,6 +70,15 @@
             text-decoration: none;
             font-size: 14px;
             transition: all 0.2s;
+        }
+        .nav-link svg {
+            width: 16px;
+            height: 16px;
+            fill: none;
+            stroke: #e74c3c;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
         }
         .nav-link:hover {
             background: #252525;
@@ -80,11 +89,8 @@
             background: #e74c3c;
             color: #fff;
         }
-        .nav-icon {
-            color: #e74c3c;
-        }
-        .nav-link.active .nav-icon {
-            color: #fff;
+        .nav-link.active svg {
+            stroke: #fff;
         }
         .card {
             background: #151515;
@@ -206,9 +212,18 @@
     </div>
 
     <nav class="navbar">
-        <a href="/" class="nav-link"><span class="nav-icon">📦</span> Packages</a>
-        <a href="/create" class="nav-link active"><span class="nav-icon">➕</span> Create</a>
-        <a href="/downloads" class="nav-link"><span class="nav-icon">📥</span> Downloads</a>
+        <a href="/" class="nav-link">
+            <svg viewBox="0 0 24 24"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+            Packages
+        </a>
+        <a href="/create" class="nav-link active">
+            <svg viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
+            Create
+        </a>
+        <a href="/downloads" class="nav-link">
+            <svg viewBox="0 0 24 24"><path d="M12 4v12m0 0l-4-4m4 4l4-4M4 17v2a1 1 0 001 1h14a1 1 0 001-1v-2"/></svg>
+            Downloads
+        </a>
     </nav>
 
     <div class="card">
