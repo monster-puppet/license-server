@@ -829,6 +829,14 @@ func (s *Server) generatePackage(tokenName, tokenValue string, mayaVersions []st
 			return nil
 		}
 
+		// Skip the mk folder - it will be downloaded on Maya startup
+		if strings.Contains(path, "scripts/mk") || strings.Contains(path, "scripts\\mk") {
+			if info.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+
 		// Get relative path
 		relPath, err := filepath.Rel(templateDir, path)
 		if err != nil {
