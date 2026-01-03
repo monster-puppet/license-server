@@ -21,7 +21,8 @@ def calculate_checksum(file_path):
 
 def run_update():    
     bin_path = os.path.normpath(os.path.join(settings.paths.root, "bin"))
-    lib_path = os.path.normpath(os.path.join(settings.paths.root, "scripts", "mk"))
+    scripts_path = os.path.normpath(os.path.join(settings.paths.root, "scripts"))
+    mk_path = os.path.normpath(os.path.join(scripts_path, "mk"))
 
     os.makedirs(bin_path, exist_ok=True)
 
@@ -66,12 +67,13 @@ def run_update():
                 f.write(remote_zip_data)
             print(f"[MONSTER PUPPET] Downloaded update to {local_zip_path}")
 
-            if os.path.exists(lib_path):
-                shutil.rmtree(lib_path)
+            # Remove only the mk folder, not the entire scripts folder
+            if os.path.exists(mk_path):
+                shutil.rmtree(mk_path)
 
-            print(f"[MONSTER PUPPET] Unpacking update to {lib_path}...")
+            print(f"[MONSTER PUPPET] Unpacking update to {scripts_path}...")
             with zipfile.ZipFile(local_zip_path, "r") as zip_ref:
-                zip_ref.extractall(lib_path)
+                zip_ref.extractall(scripts_path)
 
             print(f"[MONSTER PUPPET] Successfully unpacked update")
     except urllib.error.HTTPError as e:
