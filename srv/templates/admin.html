@@ -214,7 +214,6 @@
         }
         .token-hidden {
             color: #555;
-            letter-spacing: 2px;
         }
         .btn-show {
             background: none;
@@ -424,12 +423,19 @@
             outline: none;
             border-color: #e74c3c;
         }
+        .action-buttons {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .action-buttons form {
+            margin: 0;
+        }
         .btn-action {
             display: inline-flex;
             align-items: center;
             gap: 6px;
             padding: 6px 12px;
-            margin: 0 4px;
             border: 1px solid #333;
             border-radius: 6px;
             background: #1a1a1a;
@@ -565,22 +571,24 @@
                     </td>
                     <td>
                         <div class="token-value">
-                            <span class="token-text token-hidden" data-token="{{.Token}}">••••••••••••••••</span>
+                            <span class="token-text token-hidden" data-token="{{.Token}}">••••••••</span>
                             <button type="button" class="btn-show" onclick="toggleToken(this)" title="Show token">show</button>
                         </div>
                     </td>
-                    <td style="white-space: nowrap;">
-                        <form method="POST" action="/token/regenerate" style="display:inline-block; margin:0" onsubmit="return confirmRegenerate(this, '{{.Name}}')">
-                            <input type="hidden" name="id" value="{{.ID}}">
-                            <button type="submit" class="btn-action">🔄 Regenerate</button>
-                        </form>
-                        {{if eq .TokenType "download"}}
-                        <a href="/package/{{.Name}}" class="btn-action"><img src="/static/maya-logo.webp" alt="" class="btn-logo">Download</a>
-                        <form method="POST" action="/token/delete" style="display:inline-block; margin:0" onsubmit="return confirm('Delete this token?')">
-                            <input type="hidden" name="id" value="{{.ID}}">
-                            <button type="submit" class="btn-action btn-action-danger">❌ Delete</button>
-                        </form>
-                        {{end}}
+                    <td>
+                        <div class="action-buttons">
+                            <form method="POST" action="/token/regenerate" onsubmit="return confirmRegenerate(this, '{{.Name}}')">
+                                <input type="hidden" name="id" value="{{.ID}}">
+                                <button type="submit" class="btn-action">🔄 Regenerate</button>
+                            </form>
+                            {{if eq .TokenType "download"}}
+                            <a href="/package/{{.Name}}" class="btn-action">📦 Download</a>
+                            <form method="POST" action="/token/delete" onsubmit="return confirm('Delete this token?')">
+                                <input type="hidden" name="id" value="{{.ID}}">
+                                <button type="submit" class="btn-action btn-action-danger">❌ Delete</button>
+                            </form>
+                            {{end}}
+                        </div>
                     </td>
                 </tr>
                 {{end}}
@@ -596,7 +604,7 @@
                 </div>
                 <div class="token-card-value">
                     <div class="token-value">
-                        <span class="token-text token-hidden" data-token="{{.Token}}">••••••••••••••••</span>
+                        <span class="token-text token-hidden" data-token="{{.Token}}">••••••••</span>
                         <button type="button" class="btn-show" onclick="toggleToken(this)" title="Show token">show</button>
                     </div>
                 </div>
@@ -606,7 +614,7 @@
                         <button type="submit" class="btn-action">🔄 Regenerate</button>
                     </form>
                     {{if eq .TokenType "download"}}
-                    <a href="/package/{{.Name}}" class="btn-action"><img src="/static/maya-logo.webp" alt="" class="btn-logo">Download</a>
+                    <a href="/package/{{.Name}}" class="btn-action">📦 Download</a>
                     <form method="POST" action="/token/delete" style="margin:0" onsubmit="return confirm('Delete this token?')">
                         <input type="hidden" name="id" value="{{.ID}}">
                         <button type="submit" class="btn-action btn-action-danger">❌ Delete</button>
@@ -704,7 +712,7 @@
                 btn.textContent = 'hide';
                 btn.title = 'Hide token';
             } else {
-                span.textContent = '••••••••••••••••';
+                span.textContent = '••••••••';
                 span.classList.add('token-hidden');
                 btn.textContent = 'show';
                 btn.title = 'Show token';
