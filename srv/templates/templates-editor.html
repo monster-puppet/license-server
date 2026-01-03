@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Template Editor - Package Manager</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid #333;
+            flex-wrap: wrap;
+            gap: 15px;
+            flex-shrink: 0;
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .logo {
+            height: 40px;
+            width: auto;
+        }
+        .header h1 {
+            margin: 0;
+            color: #fff;
+            font-size: 20px;
+            font-weight: 500;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+        }
+        a { color: #e74c3c; text-decoration: none; }
+        a:hover { text-decoration: underline; color: #ff6b5b; }
+        .navbar {
+            display: flex;
+            gap: 10px;
+            padding: 12px 20px;
+            border-bottom: 1px solid #252525;
+            flex-shrink: 0;
+        }
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 6px;
+            background: #1a1a1a;
+            color: #888;
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .nav-link svg {
+            width: 16px;
+            height: 16px;
+            fill: none;
+            stroke: #e74c3c;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        .nav-link:hover {
+            background: #252525;
+            color: #e0e0e0;
+            text-decoration: none;
+        }
+        .nav-link.active {
+            background: #e74c3c;
+            color: #fff;
+        }
+        .nav-link.active svg {
+            stroke: #fff;
+        }
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        .sidebar {
+            width: 300px;
+            border-right: 1px solid #252525;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+        .sidebar-header {
+            padding: 12px 15px;
+            border-bottom: 1px solid #252525;
+            font-weight: 500;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .sidebar-header svg {
+            width: 16px;
+            height: 16px;
+            stroke: #e74c3c;
+            fill: none;
+            stroke-width: 2;
+        }
+        .file-tree {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 0;
+        }
+        .tree-item {
+            display: flex;
+            align-items: center;
+            padding: 6px 15px;
+            cursor: pointer;
+            transition: background 0.15s;
+            user-select: none;
+        }
+        .tree-item:hover {
+            background: #1a1a1a;
+        }
+        .tree-item.selected {
+            background: #252525;
+        }
+        .tree-item.folder {
+            font-weight: 500;
+        }
+        .tree-item svg {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+            flex-shrink: 0;
+            stroke: #888;
+            fill: none;
+            stroke-width: 2;
+        }
+        .tree-item.folder svg {
+            stroke: #e74c3c;
+        }
+        .tree-item .name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .tree-children {
+            display: none;
+        }
+        .tree-children.expanded {
+            display: block;
+        }
+        .tree-item[data-level="1"] { padding-left: 30px; }
+        .tree-item[data-level="2"] { padding-left: 45px; }
+        .tree-item[data-level="3"] { padding-left: 60px; }
+        .tree-item[data-level="4"] { padding-left: 75px; }
+        .tree-item[data-level="5"] { padding-left: 90px; }
+        .tree-item[data-level="6"] { padding-left: 105px; }
+        .editor-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+        .editor-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            border-bottom: 1px solid #252525;
+            background: #101010;
+        }
+        .editor-path {
+            font-family: monospace;
+            font-size: 13px;
+            color: #888;
+        }
+        .editor-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn svg {
+            width: 14px;
+            height: 14px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+        }
+        .btn-primary {
+            background: #e74c3c;
+            color: white;
+        }
+        .btn-primary:hover { background: #c0392b; }
+        .btn-primary:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background: #1a1a1a;
+            color: #e0e0e0;
+            border: 1px solid #333;
+        }
+        .btn-secondary:hover {
+            background: #252525;
+        }
+        .status {
+            font-size: 12px;
+            color: #888;
+        }
+        .status.modified {
+            color: #e74c3c;
+        }
+        .status.saved {
+            color: #4caf50;
+        }
+        .editor-wrapper {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+        #editor {
+            width: 100%;
+            height: 100%;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            border: none;
+            padding: 15px 20px;
+            font-family: 'JetBrains Mono', 'Fira Code', 'Monaco', 'Consolas', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            resize: none;
+            outline: none;
+            tab-size: 4;
+        }
+        #editor:focus {
+            outline: none;
+        }
+        .placeholder {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #555;
+            font-size: 14px;
+        }
+        .placeholder svg {
+            width: 48px;
+            height: 48px;
+            stroke: #333;
+            fill: none;
+            stroke-width: 1;
+            margin-bottom: 15px;
+        }
+        .placeholder-content {
+            text-align: center;
+        }
+        .loading {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #888;
+        }
+        .loading.active {
+            display: flex;
+        }
+        .binary-notice {
+            padding: 40px;
+            text-align: center;
+            color: #888;
+        }
+        .binary-notice svg {
+            width: 48px;
+            height: 48px;
+            stroke: #555;
+            fill: none;
+            stroke-width: 1;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <img src="https://timeoff.monster-puppet.com/static/logo.png" alt="Monster Puppet" class="logo">
+            <h1>Package Manager</h1>
+        </div>
+        <div class="user-info">
+            {{if .Picture}}<img src="{{.Picture}}" alt="" class="avatar" referrerpolicy="no-referrer">{{end}}
+            <a href="/logout">Logout</a>
+        </div>
+    </div>
+
+    <nav class="navbar">
+        <a href="/" class="nav-link">
+            <svg viewBox="0 0 24 24"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+            Packages
+        </a>
+        <a href="/create" class="nav-link">
+            <svg viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
+            Create
+        </a>
+        <a href="/downloads" class="nav-link">
+            <svg viewBox="0 0 24 24"><path d="M12 4v12m0 0l-4-4m4 4l4-4M4 17v2a1 1 0 001 1h14a1 1 0 001-1v-2"/></svg>
+            Downloads
+        </a>
+        <a href="/templates" class="nav-link active">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+            Templates
+        </a>
+    </nav>
+
+    <div class="main-container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+                Template Files
+            </div>
+            <div class="file-tree" id="fileTree">
+                <div class="loading active">Loading...</div>
+            </div>
+        </div>
+
+        <div class="editor-container">
+            <div class="editor-header" id="editorHeader" style="display: none;">
+                <span class="editor-path" id="editorPath"></span>
+                <div class="editor-actions">
+                    <span class="status" id="editorStatus"></span>
+                    <button class="btn btn-secondary" onclick="reloadFile()">
+                        <svg viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        Reload
+                    </button>
+                    <button class="btn btn-primary" id="saveBtn" onclick="saveFile()" disabled>
+                        <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        Save
+                    </button>
+                </div>
+            </div>
+            <div class="editor-wrapper">
+                <div class="placeholder" id="placeholder">
+                    <div class="placeholder-content">
+                        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        <div>Select a file to edit</div>
+                    </div>
+                </div>
+                <div class="binary-notice" id="binaryNotice" style="display: none;">
+                    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    <div>Binary file - cannot be edited</div>
+                </div>
+                <textarea id="editor" style="display: none;" spellcheck="false"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentFile = null;
+        let originalContent = '';
+        let isModified = false;
+
+        const editor = document.getElementById('editor');
+        const placeholder = document.getElementById('placeholder');
+        const binaryNotice = document.getElementById('binaryNotice');
+        const editorHeader = document.getElementById('editorHeader');
+        const editorPath = document.getElementById('editorPath');
+        const editorStatus = document.getElementById('editorStatus');
+        const saveBtn = document.getElementById('saveBtn');
+
+        // Load initial file tree
+        loadFileTree();
+
+        async function loadFileTree() {
+            const tree = document.getElementById('fileTree');
+            tree.innerHTML = '<div class="loading active">Loading...</div>';
+
+            try {
+                const resp = await fetch('/api/templates/files');
+                if (!resp.ok) throw new Error('Failed to load');
+                const data = await resp.json();
+                tree.innerHTML = renderTree(data.children || [], 0);
+            } catch (err) {
+                tree.innerHTML = '<div class="loading active">Failed to load files</div>';
+            }
+        }
+
+        function renderTree(items, level) {
+            if (!items || items.length === 0) return '';
+            
+            return items.map(item => {
+                const isFolder = item.is_dir;
+                const icon = isFolder 
+                    ? '<svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>'
+                    : '<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+                
+                let html = `<div class="tree-item ${isFolder ? 'folder' : ''}" data-level="${level}" data-path="${item.path}" data-is-dir="${isFolder}" onclick="handleTreeClick(event, this)">
+                    ${icon}
+                    <span class="name">${item.name}</span>
+                </div>`;
+                
+                if (isFolder && item.children && item.children.length > 0) {
+                    html += `<div class="tree-children" data-parent="${item.path}">${renderTree(item.children, level + 1)}</div>`;
+                }
+                
+                return html;
+            }).join('');
+        }
+
+        function handleTreeClick(event, el) {
+            event.stopPropagation();
+            const isDir = el.dataset.isDir === 'true';
+            const path = el.dataset.path;
+
+            if (isDir) {
+                // Toggle folder expansion
+                const children = document.querySelector(`.tree-children[data-parent="${path}"]`);
+                if (children) {
+                    children.classList.toggle('expanded');
+                }
+            } else {
+                // Check for unsaved changes
+                if (isModified) {
+                    if (!confirm('You have unsaved changes. Discard them?')) {
+                        return;
+                    }
+                }
+                // Select file
+                document.querySelectorAll('.tree-item.selected').forEach(el => el.classList.remove('selected'));
+                el.classList.add('selected');
+                loadFile(path);
+            }
+        }
+
+        async function loadFile(path) {
+            currentFile = path;
+            editorPath.textContent = path;
+            editorHeader.style.display = 'flex';
+            placeholder.style.display = 'none';
+            binaryNotice.style.display = 'none';
+            editor.style.display = 'none';
+            editorStatus.textContent = 'Loading...';
+            editorStatus.className = 'status';
+
+            try {
+                const resp = await fetch('/api/templates/file?path=' + encodeURIComponent(path));
+                if (!resp.ok) {
+                    const data = await resp.json();
+                    throw new Error(data.error || 'Failed to load');
+                }
+                
+                const contentType = resp.headers.get('Content-Type');
+                if (contentType && contentType.includes('application/octet-stream')) {
+                    binaryNotice.style.display = 'block';
+                    editorStatus.textContent = 'Binary file';
+                    saveBtn.disabled = true;
+                    return;
+                }
+
+                const content = await resp.text();
+                originalContent = content;
+                editor.value = content;
+                editor.style.display = 'block';
+                editorStatus.textContent = '';
+                isModified = false;
+                saveBtn.disabled = true;
+            } catch (err) {
+                editorStatus.textContent = 'Error: ' + err.message;
+                editorStatus.className = 'status modified';
+            }
+        }
+
+        async function reloadFile() {
+            if (!currentFile) return;
+            if (isModified) {
+                if (!confirm('Discard unsaved changes?')) return;
+            }
+            await loadFile(currentFile);
+        }
+
+        async function saveFile() {
+            if (!currentFile || !isModified) return;
+
+            editorStatus.textContent = 'Saving...';
+            editorStatus.className = 'status';
+            saveBtn.disabled = true;
+
+            try {
+                const resp = await fetch('/api/templates/file', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        path: currentFile,
+                        content: editor.value
+                    })
+                });
+
+                if (!resp.ok) {
+                    const data = await resp.json();
+                    throw new Error(data.error || 'Failed to save');
+                }
+
+                originalContent = editor.value;
+                isModified = false;
+                editorStatus.textContent = 'Saved!';
+                editorStatus.className = 'status saved';
+                setTimeout(() => {
+                    if (editorStatus.textContent === 'Saved!') {
+                        editorStatus.textContent = '';
+                    }
+                }, 2000);
+            } catch (err) {
+                editorStatus.textContent = 'Error: ' + err.message;
+                editorStatus.className = 'status modified';
+                saveBtn.disabled = false;
+            }
+        }
+
+        editor.addEventListener('input', () => {
+            const modified = editor.value !== originalContent;
+            if (modified !== isModified) {
+                isModified = modified;
+                saveBtn.disabled = !modified;
+                editorStatus.textContent = modified ? 'Modified' : '';
+                editorStatus.className = modified ? 'status modified' : 'status';
+            }
+        });
+
+        // Handle tab key in editor
+        editor.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = editor.selectionStart;
+                const end = editor.selectionEnd;
+                editor.value = editor.value.substring(0, start) + '    ' + editor.value.substring(end);
+                editor.selectionStart = editor.selectionEnd = start + 4;
+                editor.dispatchEvent(new Event('input'));
+            }
+            // Ctrl+S to save
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                if (isModified) saveFile();
+            }
+        });
+
+        // Warn before leaving with unsaved changes
+        window.addEventListener('beforeunload', (e) => {
+            if (isModified) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+    </script>
+</body>
+</html>

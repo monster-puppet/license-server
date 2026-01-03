@@ -1171,6 +1171,237 @@ func (s *Server) HandleUploadTemplate(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"message": "Template uploaded successfully"}`))
 }
 
+// FileEntry represents a file or directory in the tree
+type FileEntry struct {
+	Name     string       `json:"name"`
+	Path     string       `json:"path"`
+	IsDir    bool         `json:"is_dir"`
+	Children []*FileEntry `json:"children,omitempty"`
+}
+
+func (s *Server) HandleTemplatesPage(w http.ResponseWriter, r *http.Request) {
+	session := s.getSession(r)
+	if session == nil {
+		http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
+		return
+	}
+
+	data := struct {
+		Email   string
+		Picture string
+	}{
+		Email:   session.Email,
+		Picture: session.Picture,
+	}
+
+	tmpl, err := template.ParseFiles(filepath.Join(s.TemplatesDir, "templates-editor.html"))
+	if err != nil {
+		http.Error(w, "Failed to load template", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	tmpl.Execute(w, data)
+}
+
+func (s *Server) HandleTemplatesAPI(w http.ResponseWriter, r *http.Request) {
+	email := s.getSessionEmail(r)
+	if email == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	templateDir := "/home/exedev/hubv2/templates"
+	root := &FileEntry{
+		Name:  "templates",
+		Path:  "",
+		IsDir: true,
+	}
+
+	err := s.buildFileTree(templateDir, "", root)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(root)
+}
+
+func (s *Server) buildFileTree(baseDir, relPath string, parent *FileEntry) error {
+	fullPath := filepath.Join(baseDir, relPath)
+	entries, err := os.ReadDir(fullPath)
+	if err != nil {
+		return err
+	}
+
+	for _, entry := range entries {
+		// Skip hidden files and the zip file
+		if strings.HasPrefix(entry.Name(), ".") {
+			continue
+		}
+		if strings.HasSuffix(entry.Name(), ".zip") {
+			continue
+		}
+		// Skip __pycache__ directories
+		if entry.Name() == "__pycache__" {
+			continue
+		}
+
+		childRelPath := filepath.Join(relPath, entry.Name())
+		child := &FileEntry{
+			Name:  entry.Name(),
+			Path:  childRelPath,
+			IsDir: entry.IsDir(),
+		}
+
+		if entry.IsDir() {
+			if err := s.buildFileTree(baseDir, childRelPath, child); err != nil {
+				return err
+			}
+		}
+
+		parent.Children = append(parent.Children, child)
+	}
+
+	return nil
+}
+
+func (s *Server) HandleTemplateFileRead(w http.ResponseWriter, r *http.Request) {
+	email := s.getSessionEmail(r)
+	if email == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	relPath := r.URL.Query().Get("path")
+	if relPath == "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Missing path parameter"})
+		return
+	}
+
+	// Security: prevent path traversal
+	if strings.Contains(relPath, "..") {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid path"})
+		return
+	}
+
+	templateDir := "/home/exedev/hubv2/templates"
+	fullPath := filepath.Join(templateDir, relPath)
+
+	// Ensure path is within template dir
+	if !strings.HasPrefix(fullPath, templateDir) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid path"})
+		return
+	}
+
+	info, err := os.Stat(fullPath)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(map[string]string{"error": "File not found"})
+		return
+	}
+
+	if info.IsDir() {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Cannot read directory"})
+		return
+	}
+
+	// Check if file is likely binary
+	ext := strings.ToLower(filepath.Ext(fullPath))
+	binaryExts := map[string]bool{
+		".pyc": true, ".pyo": true, ".exe": true, ".dll": true,
+		".so": true, ".dylib": true, ".png": true, ".jpg": true,
+		".jpeg": true, ".gif": true, ".ico": true, ".zip": true,
+		".tar": true, ".gz": true, ".7z": true, ".rar": true,
+	}
+	if binaryExts[ext] {
+		w.Header().Set("Content-Type", "application/octet-stream")
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	content, err := os.ReadFile(fullPath)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to read file"})
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Write(content)
+}
+
+func (s *Server) HandleTemplateFileSave(w http.ResponseWriter, r *http.Request) {
+	email := s.getSessionEmail(r)
+	if email == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var req struct {
+		Path    string `json:"path"`
+		Content string `json:"content"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid request"})
+		return
+	}
+
+	// Security: prevent path traversal
+	if strings.Contains(req.Path, "..") {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid path"})
+		return
+	}
+
+	templateDir := "/home/exedev/hubv2/templates"
+	fullPath := filepath.Join(templateDir, req.Path)
+
+	// Ensure path is within template dir
+	if !strings.HasPrefix(fullPath, templateDir) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid path"})
+		return
+	}
+
+	// Verify file exists (don't allow creating new files through this endpoint)
+	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(map[string]string{"error": "File not found"})
+		return
+	}
+
+	if err := os.WriteFile(fullPath, []byte(req.Content), 0644); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to save file"})
+		return
+	}
+
+	slog.Info("Template file saved", "path", req.Path, "by", email)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"message": "File saved successfully"})
+}
+
 func (s *Server) Serve(addr string) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", s.HandleRoot)
@@ -1185,6 +1416,12 @@ func (s *Server) Serve(addr string) error {
 	mux.HandleFunc("GET /package/{name}", s.HandlePackageDownload)
 	mux.HandleFunc("GET /lib/{version}", s.HandleLibDownload)
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir(filepath.Join(s.TemplatesDir, "..", "static")))))
+
+	// Template editor routes
+	mux.HandleFunc("GET /templates", s.HandleTemplatesPage)
+	mux.HandleFunc("GET /api/templates/files", s.HandleTemplatesAPI)
+	mux.HandleFunc("GET /api/templates/file", s.HandleTemplateFileRead)
+	mux.HandleFunc("POST /api/templates/file", s.HandleTemplateFileSave)
 
 	// Admin routes
 	mux.HandleFunc("GET /login", s.HandleAdminLogin)
