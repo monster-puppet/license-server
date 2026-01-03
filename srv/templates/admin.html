@@ -233,6 +233,23 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .version-file:hover {
+            background: #151515;
+            border-color: #e74c3c;
+            text-decoration: none;
+        }
+        .version-file .download-icon {
+            width: 20px;
+            height: 20px;
+            opacity: 0.5;
+            transition: opacity 0.2s;
+        }
+        .version-file:hover .download-icon {
+            opacity: 1;
         }
         .version-file svg {
             width: 24px;
@@ -473,7 +490,7 @@
             {{if .VersionFiles}}
             <div class="version-files-grid">
                 {{range .VersionFiles}}
-                <div class="version-file">
+                <a href="/lib/{{.MayaVersion}}" class="version-file">
                     <svg viewBox="0 0 24 24"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                     <div class="version-file-info">
                         <div class="file-name">mk_{{.MayaVersion}}.zip</div>
@@ -483,7 +500,8 @@
                             <span>{{.Modified}}</span>
                         </div>
                     </div>
-                </div>
+                    <svg class="download-icon" viewBox="0 0 24 24"><path d="M12 4v12m0 0l-4-4m4 4l4-4M4 17v2a1 1 0 001 1h14a1 1 0 001-1v-2"/></svg>
+                </a>
                 {{end}}
             </div>
             <button class="btn-history" onclick="showHistory()">View Upload History</button>

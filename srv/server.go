@@ -750,6 +750,31 @@ func generateRandomString(n int) string {
 	return base64.URLEncoding.EncodeToString(b)[:n]
 }
 
+func (s *Server) HandleLibDownload(w http.ResponseWriter, r *http.Request) {
+	session := s.getSession(r)
+	if session == nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	version := r.PathValue("version")
+	var fileName string
+	if version == "generic" {
+		fileName = "mk.zip"
+	} else {
+		fileName = fmt.Sprintf("mk_%s.zip", version)
+	}
+
+	filePath := filepath.Join(s.LibFolder, fileName)
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		http.Error(w, "File not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", fileName))
+	http.ServeFile(w, r, filePath)
+}
+
 func (s *Server) HandlePackageDownload(w http.ResponseWriter, r *http.Request) {
 	email := s.getSessionEmail(r)
 	if email == "" {
@@ -1158,6 +1183,7 @@ func (s *Server) Serve(addr string) error {
 	mux.HandleFunc("GET /create", s.HandleCreatePage)
 	mux.HandleFunc("GET /created", s.HandleCreatedPage)
 	mux.HandleFunc("GET /package/{name}", s.HandlePackageDownload)
+	mux.HandleFunc("GET /lib/{version}", s.HandleLibDownload)
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir(filepath.Join(s.TemplatesDir, "..", "static")))))
 
 	// Admin routes
