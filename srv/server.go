@@ -840,7 +840,7 @@ func (s *Server) generatePackage(tokenName, tokenValue string, mayaVersions []st
 func (s *Server) generateModContent(tokenName string, mayaVersions []string) string {
 	var blocks []string
 	for _, version := range mayaVersions {
-		block := fmt.Sprintf("+ MAYAVERSION:%s %s_module 1.0.0 .\r\nscripts: scripts\r\nMAYA_SHELF_PATH+:=shelves\r\nMAYA_NO_WARNING_FOR_MISSING_DEFAULT_RENDERER=1\r\nMAYA_CM_DISABLE_ERROR_POPUPS=1", version, tokenName)
+		block := fmt.Sprintf("+ MAYAVERSION:%s %s_module 1.0.0 .\r\nMAYA_SHELF_PATH+:=shelves\r\nMAYA_NO_WARNING_FOR_MISSING_DEFAULT_RENDERER=1\r\nMAYA_CM_DISABLE_ERROR_POPUPS=1", version, tokenName)
 		blocks = append(blocks, block)
 	}
 	return strings.Join(blocks, "\r\n\r\n") + "\r\n"
