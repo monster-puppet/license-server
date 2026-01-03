@@ -4,7 +4,7 @@ global proc shelf_PBP_Rigging () {
     global string $gBuffStr1;
 
     // Auto-initialize module
-    python("import sys, os; import maya.cmds as cmds; p = os.path.join(cmds.getModulePath(moduleName='pbp_module'), 'scripts'); sys.path.insert(0, p) if p not in sys.path else None; exec(open(os.path.join(p, 'userSetup.py')).read())");
+    python("import maya.cmds as cmds; cmds.evalDeferred(\"import sys, os; import maya.cmds as cmds; p = os.path.join(cmds.getModulePath(moduleName='pbp_module'), 'scripts'); sys.path.insert(0, p) if p not in sys.path else None; exec(open(os.path.join(p, 'userSetup.py')).read())\")");
 
 
     shelfButton
