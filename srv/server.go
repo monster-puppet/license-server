@@ -320,7 +320,8 @@ func (s *Server) HandleAdminCallback(w http.ResponseWriter, r *http.Request) {
 	defer userResp.Body.Close()
 
 	var userData struct {
-		Email string `json:"email"`
+		Email   string `json:"email"`
+		Picture string `json:"picture"`
 	}
 	if err := json.NewDecoder(userResp.Body).Decode(&userData); err != nil {
 		http.Error(w, "Failed to parse user info", http.StatusInternalServerError)
@@ -346,6 +347,7 @@ func (s *Server) HandleAdminCallback(w http.ResponseWriter, r *http.Request) {
 	err = q.CreateSession(r.Context(), dbgen.CreateSessionParams{
 		ID:        sessionID,
 		Email:     userData.Email,
+		Picture:   &userData.Picture,
 		ExpiresAt: time.Now().Add(24 * time.Hour),
 	})
 	if err != nil {
@@ -382,21 +384,48 @@ func (s *Server) HandleAdminLogout(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   -1,
 	})
 
-	http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
+	http.Redirect(w, r, "/logged-out", http.StatusTemporaryRedirect)
 }
 
-func (s *Server) getSessionEmail(r *http.Request) string {
+func (s *Server) HandleLoggedOut(w http.ResponseWriter, r *http.Request) {
+	tmpl, err := template.ParseFiles(filepath.Join(s.TemplatesDir, "logged-out.html"))
+	if err != nil {
+		http.Error(w, "Failed to load template", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	tmpl.Execute(w, nil)
+}
+
+type SessionInfo struct {
+	Email   string
+	Picture string
+}
+
+func (s *Server) getSession(r *http.Request) *SessionInfo {
 	cookie, err := r.Cookie("session")
 	if err != nil {
-		return ""
+		return nil
 	}
 
 	q := dbgen.New(s.DB)
 	session, err := q.GetSession(r.Context(), cookie.Value)
 	if err != nil {
+		return nil
+	}
+	picture := ""
+	if session.Picture != nil {
+		picture = *session.Picture
+	}
+	return &SessionInfo{Email: session.Email, Picture: picture}
+}
+
+func (s *Server) getSessionEmail(r *http.Request) string {
+	si := s.getSession(r)
+	if si == nil {
 		return ""
 	}
-	return session.Email
+	return si.Email
 }
 
 type FileInfo struct {
@@ -431,8 +460,8 @@ func (s *Server) getFileInfo() FileInfo {
 }
 
 func (s *Server) HandleAdmin(w http.ResponseWriter, r *http.Request) {
-	email := s.getSessionEmail(r)
-	if email == "" {
+	session := s.getSession(r)
+	if session == nil {
 		http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
 		return
 	}
@@ -446,11 +475,13 @@ func (s *Server) HandleAdmin(w http.ResponseWriter, r *http.Request) {
 
 	data := struct {
 		Email    string
+		Picture  string
 		Tokens   []dbgen.GetAllTokensRow
 		File     FileInfo
 		FileName string
 	}{
-		Email:    email,
+		Email:    session.Email,
+		Picture:  session.Picture,
 		Tokens:   tokens,
 		File:     s.getFileInfo(),
 		FileName: s.LatestFile,
@@ -881,6 +912,7 @@ func (s *Server) Serve(addr string) error {
 	mux.HandleFunc("GET /login", s.HandleAdminLogin)
 	mux.HandleFunc("GET /callback", s.HandleAdminCallback)
 	mux.HandleFunc("GET /logout", s.HandleAdminLogout)
+	mux.HandleFunc("GET /logged-out", s.HandleLoggedOut)
 	mux.HandleFunc("POST /token/regenerate", s.HandleAdminRegenerateToken)
 	mux.HandleFunc("POST /token/create", s.HandleAdminCreateToken)
 	mux.HandleFunc("POST /token/delete", s.HandleAdminDeleteToken)

@@ -45,7 +45,11 @@
             align-items: center;
             gap: 15px;
         }
-        .user-info span { color: #888; }
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+        }
         a { color: #e74c3c; text-decoration: none; }
         a:hover { text-decoration: underline; color: #ff6b5b; }
         .card {
@@ -387,9 +391,7 @@
             .logo {
                 height: 40px;
             }
-            .user-info span {
-                display: none;
-            }
+
             .tokens-table {
                 display: none;
             }
@@ -431,7 +433,7 @@
             <h1>Package Manager</h1>
         </div>
         <div class="user-info">
-            <span>{{.Email}}</span>
+            {{if .Picture}}<img src="{{.Picture}}" alt="" class="avatar" referrerpolicy="no-referrer">{{end}}
             <a href="/logout">Logout</a>
         </div>
     </div>
