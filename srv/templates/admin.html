@@ -60,6 +60,9 @@
             border-bottom: 1px solid #252525;
         }
         .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 6px;
             padding: 8px 16px;
             border-radius: 6px;
             background: #1a1a1a;
@@ -67,6 +70,9 @@
             text-decoration: none;
             font-size: 14px;
             transition: all 0.2s;
+        }
+        .nav-icon {
+            font-size: 16px;
         }
         .nav-link:hover {
             background: #252525;
@@ -506,8 +512,9 @@
     </div>
 
     <nav class="navbar">
-        <a href="/" class="nav-link active">Packages</a>
-        <a href="/downloads" class="nav-link">Downloads</a>
+        <a href="/" class="nav-link active"><span class="nav-icon">📦</span> Packages</a>
+        <a href="/downloads" class="nav-link"><span class="nav-icon">📥</span> Downloads</a>
+        <a href="/create" class="nav-link"><span class="nav-icon">➕</span> Create</a>
     </nav>
 
     <div class="card">
@@ -606,34 +613,6 @@
             </div>
             {{end}}
         </div>
-    </div>
-
-    <div class="card">
-        <h2>Create New Client Package</h2>
-        <form method="POST" action="/token/create">
-            <div class="form-row">
-                <input type="text" name="name" placeholder="Client name (e.g. acme)" required>
-            </div>
-            <div class="maya-versions">
-                <label>Supported Maya Versions:</label>
-                <div class="checkbox-group">
-                    <label class="checkbox-label"><input type="checkbox" name="maya_versions" value="2024" checked onchange="updateDefaultVersionOptions()"> 2024</label>
-                    <label class="checkbox-label"><input type="checkbox" name="maya_versions" value="2025" checked onchange="updateDefaultVersionOptions()"> 2025</label>
-                    <label class="checkbox-label"><input type="checkbox" name="maya_versions" value="2026" checked onchange="updateDefaultVersionOptions()"> 2026</label>
-                </div>
-            </div>
-            <div class="maya-versions">
-                <label>Default Maya Version:</label>
-                <select name="default_maya_version" id="default_maya_version" class="version-select">
-                    <option value="2024" selected>2024</option>
-                    <option value="2025">2025</option>
-                    <option value="2026">2026</option>
-                </select>
-            </div>
-            <div class="form-row" style="margin-top: 15px;">
-                <button type="submit" class="btn-primary">Create Package</button>
-            </div>
-        </form>
     </div>
 
     <!-- Upload History Modal -->
@@ -737,36 +716,6 @@
             return false;
         }
 
-        function updateDefaultVersionOptions() {
-            const checkboxes = document.querySelectorAll('input[name="maya_versions"]:checked');
-            const select = document.getElementById('default_maya_version');
-            const currentValue = select.value;
-            
-            // Get all checked versions
-            const checkedVersions = Array.from(checkboxes).map(cb => cb.value);
-            
-            // Update select options
-            select.innerHTML = '';
-            checkedVersions.forEach(version => {
-                const option = document.createElement('option');
-                option.value = version;
-                option.textContent = version;
-                if (version === currentValue) {
-                    option.selected = true;
-                }
-                select.appendChild(option);
-            });
-            
-            // If no options, add a disabled placeholder
-            if (checkedVersions.length === 0) {
-                const option = document.createElement('option');
-                option.value = '';
-                option.textContent = 'Select versions first';
-                option.disabled = true;
-                option.selected = true;
-                select.appendChild(option);
-            }
-        }
     </script>
 </body>
 </html>

@@ -1042,6 +1042,31 @@ func (s *Server) HandleDownloadHistoryAPI(w http.ResponseWriter, r *http.Request
 	json.NewEncoder(w).Encode(history)
 }
 
+func (s *Server) HandleCreatePage(w http.ResponseWriter, r *http.Request) {
+	session := s.getSession(r)
+	if session == nil {
+		http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
+		return
+	}
+
+	data := struct {
+		Email   string
+		Picture string
+	}{
+		Email:   session.Email,
+		Picture: session.Picture,
+	}
+
+	tmpl, err := template.ParseFiles(filepath.Join(s.TemplatesDir, "create.html"))
+	if err != nil {
+		http.Error(w, "Failed to load template", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	tmpl.Execute(w, data)
+}
+
 func (s *Server) HandleUploadTemplate(w http.ResponseWriter, r *http.Request) {
 	token := r.Header.Get("Authorization")
 	if token != s.getUploadToken() {
@@ -1101,6 +1126,7 @@ func (s *Server) Serve(addr string) error {
 	mux.HandleFunc("GET /upload/history", s.HandleUploadHistory)
 	mux.HandleFunc("GET /downloads", s.HandleDownloadHistory)
 	mux.HandleFunc("GET /download/history", s.HandleDownloadHistoryAPI)
+	mux.HandleFunc("GET /create", s.HandleCreatePage)
 	mux.HandleFunc("GET /package/{name}", s.HandlePackageDownload)
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir(filepath.Join(s.TemplatesDir, "..", "static")))))
 

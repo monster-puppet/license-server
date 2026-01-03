@@ -60,6 +60,9 @@
             border-bottom: 1px solid #252525;
         }
         .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 6px;
             padding: 8px 16px;
             border-radius: 6px;
             background: #1a1a1a;
@@ -67,6 +70,9 @@
             text-decoration: none;
             font-size: 14px;
             transition: all 0.2s;
+        }
+        .nav-icon {
+            font-size: 16px;
         }
         .nav-link:hover {
             background: #252525;
@@ -153,8 +159,9 @@
     </div>
 
     <nav class="navbar">
-        <a href="/" class="nav-link">Packages</a>
-        <a href="/downloads" class="nav-link active">Downloads</a>
+        <a href="/" class="nav-link"><span class="nav-icon">📦</span> Packages</a>
+        <a href="/downloads" class="nav-link active"><span class="nav-icon">📥</span> Downloads</a>
+        <a href="/create" class="nav-link"><span class="nav-icon">➕</span> Create</a>
     </nav>
 
     <div class="card">

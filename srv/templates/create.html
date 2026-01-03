@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Client - Package Manager</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #333;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .logo {
+            height: 50px;
+            width: auto;
+        }
+        .header h1 {
+            margin: 0;
+            color: #fff;
+            font-size: 24px;
+            font-weight: 500;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+        }
+        a { color: #e74c3c; text-decoration: none; }
+        a:hover { text-decoration: underline; color: #ff6b5b; }
+        .navbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #252525;
+        }
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 6px;
+            background: #1a1a1a;
+            color: #888;
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .nav-link:hover {
+            background: #252525;
+            color: #e0e0e0;
+            text-decoration: none;
+        }
+        .nav-link.active {
+            background: #e74c3c;
+            color: #fff;
+        }
+        .nav-icon {
+            font-size: 16px;
+        }
+        .card {
+            background: #151515;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #252525;
+        }
+        .card h2 {
+            margin-top: 0;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 500;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #333;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #e74c3c;
+        }
+        input[type="text"]::placeholder {
+            color: #555;
+        }
+        button {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #e74c3c;
+            color: white;
+        }
+        .btn-primary:hover { background: #c0392b; }
+        .form-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .form-row input[type="text"] { flex: 1; }
+        .maya-versions {
+            margin: 15px 0;
+        }
+        .maya-versions label:first-child {
+            color: #888;
+            display: block;
+            margin-bottom: 10px;
+        }
+        .checkbox-group {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #e0e0e0;
+            cursor: pointer;
+        }
+        .checkbox-label input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #e74c3c;
+        }
+        .version-select {
+            padding: 8px 12px;
+            border: 1px solid #333;
+            border-radius: 4px;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .version-select:focus {
+            outline: none;
+            border-color: #e74c3c;
+        }
+        @media (max-width: 600px) {
+            body {
+                padding: 15px;
+            }
+            .header h1 {
+                font-size: 20px;
+            }
+            .logo {
+                height: 40px;
+            }
+            .form-row {
+                flex-direction: column;
+            }
+            .form-row button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <img src="https://timeoff.monster-puppet.com/static/logo.png" alt="Monster Puppet" class="logo">
+            <h1>Package Manager</h1>
+        </div>
+        <div class="user-info">
+            {{if .Picture}}<img src="{{.Picture}}" alt="" class="avatar" referrerpolicy="no-referrer">{{end}}
+            <a href="/logout">Logout</a>
+        </div>
+    </div>
+
+    <nav class="navbar">
+        <a href="/" class="nav-link"><span class="nav-icon">📦</span> Packages</a>
+        <a href="/downloads" class="nav-link"><span class="nav-icon">📥</span> Downloads</a>
+        <a href="/create" class="nav-link active"><span class="nav-icon">➕</span> Create</a>
+    </nav>
+
+    <div class="card">
+        <h2>Create New Client Package</h2>
+        <form method="POST" action="/token/create">
+            <div class="form-row">
+                <input type="text" name="name" placeholder="Client name (e.g. acme)" required>
+            </div>
+            <div class="maya-versions">
+                <label>Supported Maya Versions:</label>
+                <div class="checkbox-group">
+                    <label class="checkbox-label"><input type="checkbox" name="maya_versions" value="2024" checked onchange="updateDefaultVersionOptions()"> 2024</label>
+                    <label class="checkbox-label"><input type="checkbox" name="maya_versions" value="2025" checked onchange="updateDefaultVersionOptions()"> 2025</label>
+                    <label class="checkbox-label"><input type="checkbox" name="maya_versions" value="2026" checked onchange="updateDefaultVersionOptions()"> 2026</label>
+                </div>
+            </div>
+            <div class="maya-versions">
+                <label>Default Maya Version:</label>
+                <select name="default_maya_version" id="default_maya_version" class="version-select">
+                    <option value="2024" selected>2024</option>
+                    <option value="2025">2025</option>
+                    <option value="2026">2026</option>
+                </select>
+            </div>
+            <div class="form-row" style="margin-top: 15px;">
+                <button type="submit" class="btn-primary">Create Package</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        function updateDefaultVersionOptions() {
+            const checkboxes = document.querySelectorAll('input[name="maya_versions"]:checked');
+            const select = document.getElementById('default_maya_version');
+            const currentValue = select.value;
+            
+            const checkedVersions = Array.from(checkboxes).map(cb => cb.value);
+            
+            select.innerHTML = '';
+            checkedVersions.forEach(version => {
+                const option = document.createElement('option');
+                option.value = version;
+                option.textContent = version;
+                if (version === currentValue) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+            
+            if (checkedVersions.length === 0) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'Select versions first';
+                option.disabled = true;
+                option.selected = true;
+                select.appendChild(option);
+            }
+        }
+    </script>
+</body>
+</html>
