@@ -169,7 +169,6 @@ a:hover { text-decoration: underline; color: #ff6b5b; }
     font-size: 13px;
     font-weight: 500;
     transition: all 0.2s ease;
-    overflow: hidden;
 }
 
 .nav-link svg {
