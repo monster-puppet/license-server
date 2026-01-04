@@ -1,3 +1,11 @@
+@font-face {
+  font-family: 'HeadingFont';
+  src: url('/static/fonts/heading-font.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -39,6 +47,7 @@ main {
 
 /* Header: tagline first */
 h1 {
+  font-family: 'HeadingFont', Georgia, 'Times New Roman', serif;
   font-size: clamp(30px, 6vw, 50px);
   line-height: 1.2;
   color: #000;
