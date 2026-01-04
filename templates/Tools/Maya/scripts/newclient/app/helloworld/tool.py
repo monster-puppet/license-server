@@ -22,7 +22,7 @@ class TestUI(libUI.MonsterPuppetBaseWindow):
 
     def open_documentation_page(self):
         webbrowser.open(
-            "https://playbyplaystudios.atlassian.net/wiki/spaces/MBS/pages/884968/Development+Team"
+            "https://www.monster-puppet.com"
         )
 
     def closeEvent(self, event):

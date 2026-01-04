@@ -13,8 +13,6 @@ def get_maya_version():
     """Get the Maya major version (e.g., '2024', '2025')."""
     try:
         version = cmds.about(version=True)
-        # Version is typically like "2024" or "2025"
-        # Extract just the year portion
         return version.split()[0] if version else None
     except Exception:
         return None
@@ -39,7 +37,6 @@ def run_update():
     # Get Maya version for version-specific download
     maya_version = get_maya_version()
     
-    # Local cache file is always called "latest" (no extension)
     local_zip_path = os.path.join(bin_path, "latest")
     token_file_path = os.path.join(bin_path, "token")
 
