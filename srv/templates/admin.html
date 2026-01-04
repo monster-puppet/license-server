@@ -45,7 +45,7 @@
         .header h1 {
             font-family: 'HeadingFont', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             margin: 0;
-            color: #fff;
+            color: #f5f0e6;
             font-size: 24px;
             font-weight: 500;
         }
@@ -88,7 +88,7 @@
         }
         .user-menu-name {
             font-weight: 600;
-            color: #fff;
+            color: #f5f0e6;
             font-size: 14px;
             margin-bottom: 4px;
         }
@@ -158,7 +158,7 @@
         }
         .nav-link.active {
             background: #e74c3c;
-            color: #fff;
+            color: #f5f0e6;
         }
         .nav-link.active svg {
             stroke: #fff;
@@ -172,7 +172,7 @@
         }
         .card h2 {
             margin-top: 0;
-            color: #fff;
+            color: #f5f0e6;
             font-size: 18px;
             font-weight: 500;
         }
@@ -203,7 +203,7 @@
         }
         .token-card-name {
             font-weight: 600;
-            color: #fff;
+            color: #f5f0e6;
         }
         .token-card-value {
             margin-bottom: 12px;
@@ -248,7 +248,7 @@
         }
         .btn-primary {
             background: #e74c3c;
-            color: white;
+            color: #f5f0e6;
         }
         .btn-primary:hover { background: #c0392b; }
         .token-value {
@@ -279,7 +279,7 @@
             flex-shrink: 0;
         }
         .btn-show:hover {
-            color: #fff;
+            color: #f5f0e6;
         }
         .file-info {
             padding: 15px;
@@ -338,7 +338,7 @@
         .version-file .file-name {
             font-size: 14px;
             font-weight: 500;
-            color: #fff;
+            color: #f5f0e6;
             margin-bottom: 4px;
         }
         .version-file .file-meta {
@@ -394,7 +394,7 @@
         }
         .modal-header h3 {
             margin: 0;
-            color: #fff;
+            color: #f5f0e6;
             font-size: 18px;
             font-weight: 500;
         }
@@ -408,7 +408,7 @@
             line-height: 1;
         }
         .modal-close:hover {
-            color: #fff;
+            color: #f5f0e6;
         }
         .modal-body {
             padding: 20px;
@@ -490,7 +490,7 @@
         .btn-action:hover {
             background: #2a2a2a;
             border-color: #444;
-            color: #fff;
+            color: #f5f0e6;
             text-decoration: none;
         }
         .btn-action-danger:hover {
@@ -538,7 +538,8 @@
             {{if .Picture}}<img src="{{.Picture}}" alt="" class="avatar" referrerpolicy="no-referrer" onclick="toggleUserMenu(event)">{{end}}
             <div class="user-menu" id="userMenu">
                 <div class="user-menu-header">
-                    <div class="user-menu-name">{{.Email}}</div>
+                    {{if .Name}}<div class="user-menu-name">{{.Name}}</div>{{end}}
+                    <div class="user-menu-email">{{.Email}}</div>
                 </div>
                 <div class="user-menu-items">
                     <a href="/logout" class="user-menu-item">
