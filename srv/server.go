@@ -351,7 +351,7 @@ func (s *Server) HandleAdminLogin(w http.ResponseWriter, r *http.Request) {
 	})
 
 	authURL := fmt.Sprintf(
-		"https://accounts.google.com/o/oauth2/v2/auth?client_id=%s&redirect_uri=%s&response_type=code&scope=email&state=%s",
+		"https://accounts.google.com/o/oauth2/v2/auth?client_id=%s&redirect_uri=%s&response_type=code&scope=email%%20profile&state=%s",
 		url.QueryEscape(s.GoogleClientID),
 		url.QueryEscape(s.BaseURL+"/callback"),
 		url.QueryEscape(state),
