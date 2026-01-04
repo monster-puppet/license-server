@@ -56,14 +56,76 @@
             font-weight: 500;
         }
         .user-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
+            position: relative;
         }
         .avatar {
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .avatar:hover {
+            opacity: 0.8;
+        }
+        .user-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            min-width: 220px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-8px);
+            transition: all 0.2s;
+            z-index: 100;
+        }
+        .user-menu.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        .user-menu-header {
+            padding: 16px;
+            border-bottom: 1px solid #333;
+        }
+        .user-menu-name {
+            font-weight: 600;
+            color: #fff;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        .user-menu-email {
+            font-size: 13px;
+            color: #888;
+            word-break: break-all;
+        }
+        .user-menu-items {
+            padding: 8px 0;
+        }
+        .user-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            color: #e0e0e0;
+            text-decoration: none;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        .user-menu-item:hover {
+            background: #252525;
+            text-decoration: none;
+        }
+        .user-menu-item svg {
+            width: 16px;
+            height: 16px;
+            stroke: #e74c3c;
+            stroke-width: 2;
+            fill: none;
         }
         a { color: #e74c3c; text-decoration: none; }
         a:hover { text-decoration: underline; color: #ff6b5b; }
@@ -473,8 +535,19 @@
             <h1>Package Manager</h1>
         </div>
         <div class="user-info">
-            {{if .Picture}}<img src="{{.Picture}}" alt="" class="avatar" referrerpolicy="no-referrer" crossorigin="anonymous">{{end}}
-            <a href="/logout">Logout</a>
+            {{if .Picture}}<img src="{{.Picture}}" alt="" class="avatar" referrerpolicy="no-referrer" crossorigin="anonymous" onclick="toggleUserMenu(event)">{{end}}
+            <div class="user-menu" id="userMenu">
+                <div class="user-menu-header">
+                    {{if .Name}}<div class="user-menu-name">{{.Name}}</div>{{end}}
+                    <div class="user-menu-email">{{.Email}}</div>
+                </div>
+                <div class="user-menu-items">
+                    <a href="/logout" class="user-menu-item">
+                        <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                        Sign out
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1030,6 +1103,20 @@
             if (isModified) {
                 e.preventDefault();
                 e.returnValue = '';
+            }
+        });
+
+        function toggleUserMenu(event) {
+            event.stopPropagation();
+            const menu = document.getElementById('userMenu');
+            menu.classList.toggle('active');
+        }
+
+        document.addEventListener('click', function(e) {
+            const menu = document.getElementById('userMenu');
+            const userInfo = document.querySelector('.user-info');
+            if (menu && userInfo && !userInfo.contains(e.target)) {
+                menu.classList.remove('active');
             }
         });
     </script>

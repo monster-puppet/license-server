@@ -23,10 +23,10 @@ UPDATE tokens SET token = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?;
 DELETE FROM tokens WHERE id = ?;
 
 -- name: CreateSession :exec
-INSERT INTO sessions (id, email, picture, expires_at) VALUES (?, ?, ?, ?);
+INSERT INTO sessions (id, email, name, picture, expires_at) VALUES (?, ?, ?, ?, ?);
 
 -- name: GetSession :one
-SELECT id, email, picture, created_at, expires_at FROM sessions WHERE id = ? AND expires_at > CURRENT_TIMESTAMP;
+SELECT id, email, name, picture, created_at, expires_at FROM sessions WHERE id = ? AND expires_at > CURRENT_TIMESTAMP;
 
 -- name: DeleteSession :exec
 DELETE FROM sessions WHERE id = ?;

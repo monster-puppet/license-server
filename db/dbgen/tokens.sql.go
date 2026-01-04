@@ -20,12 +20,13 @@ func (q *Queries) CleanExpiredSessions(ctx context.Context) error {
 }
 
 const createSession = `-- name: CreateSession :exec
-INSERT INTO sessions (id, email, picture, expires_at) VALUES (?, ?, ?, ?)
+INSERT INTO sessions (id, email, name, picture, expires_at) VALUES (?, ?, ?, ?, ?)
 `
 
 type CreateSessionParams struct {
 	ID        string    `json:"id"`
 	Email     string    `json:"email"`
+	Name      *string   `json:"name"`
 	Picture   *string   `json:"picture"`
 	ExpiresAt time.Time `json:"expires_at"`
 }
@@ -34,6 +35,7 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) er
 	_, err := q.db.ExecContext(ctx, createSession,
 		arg.ID,
 		arg.Email,
+		arg.Name,
 		arg.Picture,
 		arg.ExpiresAt,
 	)
@@ -190,12 +192,13 @@ func (q *Queries) GetDownloadTokens(ctx context.Context) ([]string, error) {
 }
 
 const getSession = `-- name: GetSession :one
-SELECT id, email, picture, created_at, expires_at FROM sessions WHERE id = ? AND expires_at > CURRENT_TIMESTAMP
+SELECT id, email, name, picture, created_at, expires_at FROM sessions WHERE id = ? AND expires_at > CURRENT_TIMESTAMP
 `
 
 type GetSessionRow struct {
 	ID        string    `json:"id"`
 	Email     string    `json:"email"`
+	Name      *string   `json:"name"`
 	Picture   *string   `json:"picture"`
 	CreatedAt time.Time `json:"created_at"`
 	ExpiresAt time.Time `json:"expires_at"`
@@ -207,6 +210,7 @@ func (q *Queries) GetSession(ctx context.Context, id string) (GetSessionRow, err
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
+		&i.Name,
 		&i.Picture,
 		&i.CreatedAt,
 		&i.ExpiresAt,

@@ -407,6 +407,7 @@ func (s *Server) HandleAdminCallback(w http.ResponseWriter, r *http.Request) {
 
 	var userData struct {
 		Email   string `json:"email"`
+		Name    string `json:"name"`
 		Picture string `json:"picture"`
 	}
 	if err := json.NewDecoder(userResp.Body).Decode(&userData); err != nil {
@@ -420,6 +421,7 @@ func (s *Server) HandleAdminCallback(w http.ResponseWriter, r *http.Request) {
 	err = q.CreateSession(r.Context(), dbgen.CreateSessionParams{
 		ID:        sessionID,
 		Email:     userData.Email,
+		Name:      &userData.Name,
 		Picture:   &userData.Picture,
 		ExpiresAt: time.Now().Add(24 * time.Hour),
 	})
@@ -472,6 +474,7 @@ func (s *Server) HandleLoggedOut(w http.ResponseWriter, r *http.Request) {
 
 type SessionInfo struct {
 	Email   string
+	Name    string
 	Picture string
 }
 
@@ -486,11 +489,15 @@ func (s *Server) getSession(r *http.Request) *SessionInfo {
 	if err != nil {
 		return nil
 	}
+	name := ""
+	if session.Name != nil {
+		name = *session.Name
+	}
 	picture := ""
 	if session.Picture != nil {
 		picture = *session.Picture
 	}
-	return &SessionInfo{Email: session.Email, Picture: picture}
+	return &SessionInfo{Email: session.Email, Name: name, Picture: picture}
 }
 
 func (s *Server) getSessionEmail(r *http.Request) string {
@@ -589,6 +596,7 @@ func (s *Server) HandleAdmin(w http.ResponseWriter, r *http.Request) {
 
 	data := struct {
 		Email        string
+		Name         string
 		Picture      string
 		Tokens       []dbgen.GetAllTokensRow
 		File         FileInfo
@@ -596,6 +604,7 @@ func (s *Server) HandleAdmin(w http.ResponseWriter, r *http.Request) {
 		VersionFiles []FileInfo
 	}{
 		Email:        session.Email,
+		Name:         session.Name,
 		Picture:      session.Picture,
 		Tokens:       tokens,
 		File:         s.getFileInfo(),
@@ -1098,9 +1107,11 @@ func (s *Server) HandleDownloadHistory(w http.ResponseWriter, r *http.Request) {
 
 	data := struct {
 		Email   string
+		Name    string
 		Picture string
 	}{
 		Email:   session.Email,
+		Name:    session.Name,
 		Picture: session.Picture,
 	}
 
@@ -1141,9 +1152,11 @@ func (s *Server) HandleCreatePage(w http.ResponseWriter, r *http.Request) {
 
 	data := struct {
 		Email   string
+		Name    string
 		Picture string
 	}{
 		Email:   session.Email,
+		Name:    session.Name,
 		Picture: session.Picture,
 	}
 
@@ -1164,20 +1177,22 @@ func (s *Server) HandleCreatedPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	name := r.URL.Query().Get("name")
-	if name == "" {
+	clientName := r.URL.Query().Get("name")
+	if clientName == "" {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
 
 	data := struct {
-		Email   string
-		Picture string
-		Name    string
+		Email      string
+		Name       string
+		Picture    string
+		ClientName string
 	}{
-		Email:   session.Email,
-		Picture: session.Picture,
-		Name:    name,
+		Email:      session.Email,
+		Name:       session.Name,
+		Picture:    session.Picture,
+		ClientName: clientName,
 	}
 
 	tmpl, err := template.ParseFiles(filepath.Join(s.TemplatesDir, "created.html"))
@@ -1257,9 +1272,11 @@ func (s *Server) HandleTemplatesPage(w http.ResponseWriter, r *http.Request) {
 
 	data := struct {
 		Email   string
+		Name    string
 		Picture string
 	}{
 		Email:   session.Email,
+		Name:    session.Name,
 		Picture: session.Picture,
 	}
 
