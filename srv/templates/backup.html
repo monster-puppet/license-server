@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="/static/favicon.png" type="image/png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backup & Restore - Package Manager</title>
+    <style>
+        @font-face {
+            font-family: 'HeadingFont';
+            src: url('/static/fonts/heading-font.otf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #333;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .logo {
+            height: 50px;
+            width: auto;
+        }
+        .header h1 {
+            font-family: 'HeadingFont', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            color: #f5f0e6;
+            font-size: 24px;
+            font-weight: 500;
+        }
+        .user-info {
+            position: relative;
+        }
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .avatar:hover {
+            opacity: 0.8;
+        }
+        .user-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            min-width: 220px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-8px);
+            transition: all 0.2s;
+            z-index: 100;
+        }
+        .user-menu.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        .user-menu-header {
+            padding: 16px;
+            border-bottom: 1px solid #333;
+        }
+        .user-menu-name {
+            font-weight: 600;
+            color: #f5f0e6;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        .user-menu-email {
+            font-size: 13px;
+            color: #888;
+            word-break: break-all;
+        }
+        .user-menu-items {
+            padding: 8px 0;
+        }
+        .user-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            color: #e0e0e0;
+            text-decoration: none;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        .user-menu-item:hover {
+            background: #252525;
+            text-decoration: none;
+        }
+        .user-menu-item svg {
+            width: 16px;
+            height: 16px;
+            stroke: #e74c3c;
+            stroke-width: 2;
+            fill: none;
+        }
+        a { color: #e74c3c; text-decoration: none; }
+        a:hover { text-decoration: underline; color: #ff6b5b; }
+        .navbar {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #252525;
+        }
+        .nav-link {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            background: transparent;
+            color: #666;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        .nav-link svg {
+            width: 20px;
+            height: 20px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+        .nav-link span {
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(4px);
+            padding: 6px 10px;
+            background: #252525;
+            border-radius: 6px;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+            font-size: 12px;
+            color: #e0e0e0;
+            pointer-events: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            z-index: 100;
+        }
+        .nav-link span::before {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 4px solid transparent;
+            border-bottom-color: #252525;
+        }
+        .nav-link:hover {
+            background: #1a1a1a;
+            color: #e0e0e0;
+            text-decoration: none;
+        }
+        .nav-link:hover span {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(8px);
+        }
+        .nav-link:hover svg {
+            stroke: #e74c3c;
+        }
+        .nav-link.active {
+            background: #e74c3c;
+            color: #fff;
+        }
+        .nav-link.active svg {
+            stroke: #fff;
+        }
+        .nav-link.active:hover span {
+            background: #c0392b;
+        }
+        .nav-link.active:hover span::before {
+            border-bottom-color: #c0392b;
+        }
+        .card {
+            background: #151515;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #252525;
+        }
+        .card h2 {
+            margin-top: 0;
+            color: #f5f0e6;
+            font-size: 18px;
+            font-weight: 500;
+        }
+        .card p {
+            color: #888;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        button svg {
+            width: 18px;
+            height: 18px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        .btn-primary {
+            background: #e74c3c;
+            color: #f5f0e6;
+        }
+        .btn-primary:hover { background: #c0392b; }
+        .btn-primary:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background: #252525;
+            color: #e0e0e0;
+            border: 1px solid #333;
+        }
+        .btn-secondary:hover { background: #333; }
+        .btn-warning {
+            background: #f39c12;
+            color: #000;
+        }
+        .btn-warning:hover { background: #e67e22; }
+        .upload-area {
+            border: 2px dashed #333;
+            border-radius: 8px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 15px;
+        }
+        .upload-area:hover {
+            border-color: #e74c3c;
+            background: rgba(231, 76, 60, 0.05);
+        }
+        .upload-area.dragover {
+            border-color: #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
+        }
+        .upload-area svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 15px;
+            stroke: #666;
+        }
+        .upload-area p {
+            margin: 0;
+            color: #888;
+        }
+        .upload-area p.main {
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        .upload-area p.sub {
+            font-size: 13px;
+            color: #555;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .backup-info {
+            background: #1a1a1a;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .backup-info h4 {
+            margin: 0 0 10px 0;
+            color: #f5f0e6;
+            font-size: 14px;
+        }
+        .backup-info ul {
+            margin: 0;
+            padding-left: 20px;
+            color: #888;
+            font-size: 13px;
+            line-height: 1.8;
+        }
+        .status-message {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        .status-message.success {
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid #4caf50;
+            color: #4caf50;
+            display: block;
+        }
+        .status-message.error {
+            background: rgba(231, 76, 60, 0.1);
+            border: 1px solid #e74c3c;
+            color: #e74c3c;
+            display: block;
+        }
+        .warning-box {
+            background: rgba(243, 156, 18, 0.1);
+            border: 1px solid #f39c12;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+            color: #f39c12;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .warning-box strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .selected-file {
+            background: #252525;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 15px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+        }
+        .selected-file.visible {
+            display: flex;
+        }
+        .selected-file svg {
+            width: 20px;
+            height: 20px;
+            stroke: #4caf50;
+            flex-shrink: 0;
+        }
+        .selected-file .file-name {
+            flex: 1;
+            color: #f5f0e6;
+            font-size: 14px;
+            word-break: break-all;
+        }
+        .selected-file .file-size {
+            color: #888;
+            font-size: 13px;
+        }
+        .selected-file .btn-remove {
+            background: none;
+            border: none;
+            padding: 4px;
+            cursor: pointer;
+            color: #888;
+        }
+        .selected-file .btn-remove:hover {
+            color: #e74c3c;
+        }
+        @media (max-width: 600px) {
+            body {
+                padding: 15px;
+            }
+            .header h1 {
+                font-size: 20px;
+            }
+            .logo {
+                height: 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <img src="https://timeoff.monster-puppet.com/static/logo.png" alt="Monster Puppet" class="logo">
+            <h1>Package Manager</h1>
+        </div>
+        <div class="user-info">
+            {{if .Picture}}<img src="{{.Picture}}" alt="" class="avatar" referrerpolicy="no-referrer" onclick="toggleUserMenu(event)">{{end}}
+            <div class="user-menu" id="userMenu">
+                <div class="user-menu-header">
+                    {{if .Name}}<div class="user-menu-name">{{.Name}}</div>{{end}}
+                    <div class="user-menu-email">{{.Email}}</div>
+                </div>
+                <div class="user-menu-items">
+                    <a href="/logout" class="user-menu-item">
+                        <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                        Sign out
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="navbar">
+        <a href="/" class="nav-link">
+            <svg viewBox="0 0 24 24"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+            <span>Packages</span>
+        </a>
+        <a href="/create" class="nav-link">
+            <svg viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
+            <span>Create</span>
+        </a>
+        <a href="/downloads" class="nav-link">
+            <svg viewBox="0 0 24 24"><path d="M12 4v12m0 0l-4-4m4 4l4-4M4 17v2a1 1 0 001 1h14a1 1 0 001-1v-2"/></svg>
+            <span>Downloads</span>
+        </a>
+        <a href="/template" class="nav-link">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+            <span>Template</span>
+        </a>
+        <a href="/backup" class="nav-link active">
+            <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            <span>Backup</span>
+        </a>
+    </nav>
+
+    <div id="statusMessage" class="status-message"></div>
+
+    <div class="card">
+        <h2>Download Backup</h2>
+        <p>Download a complete backup of all data including the database, packages, and templates.</p>
+        
+        <div class="backup-info">
+            <h4>Backup includes:</h4>
+            <ul>
+                <li><strong>db.sqlite3</strong> - Database with tokens, sessions, and history</li>
+                <li><strong>lib/</strong> - All Maya package files (mk_*.zip)</li>
+                <li><strong>templates/</strong> - Client workspace template files</li>
+            </ul>
+        </div>
+
+        <a href="/backup/download" class="btn-primary" style="display: inline-flex; text-decoration: none;">
+            <svg viewBox="0 0 24 24"><path d="M12 4v12m0 0l-4-4m4 4l4-4M4 17v2a1 1 0 001 1h14a1 1 0 001-1v-2"/></svg>
+            Download Backup
+        </a>
+    </div>
+
+    <div class="card">
+        <h2>Restore from Backup</h2>
+        <p>Upload a backup file to restore the database and all files.</p>
+        
+        <div class="warning-box">
+            <strong>⚠️ Warning</strong>
+            Restoring a backup will overwrite all current data including tokens, packages, and templates. This action cannot be undone.
+        </div>
+
+        <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <p class="main">Click to select backup file or drag and drop</p>
+            <p class="sub">Only .zip backup files are accepted</p>
+        </div>
+        <input type="file" id="fileInput" accept=".zip" onchange="handleFileSelect(this.files)">
+        
+        <div class="selected-file" id="selectedFile">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <span class="file-name" id="fileName"></span>
+            <span class="file-size" id="fileSize"></span>
+            <button class="btn-remove" onclick="clearFile()" title="Remove file">
+                <svg viewBox="0 0 24 24" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+
+        <button class="btn-warning" id="restoreBtn" onclick="restoreBackup()" disabled>
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Restore Backup
+        </button>
+    </div>
+
+    <script>
+        let selectedFile = null;
+
+        function toggleUserMenu(event) {
+            event.stopPropagation();
+            const menu = document.getElementById('userMenu');
+            menu.classList.toggle('active');
+        }
+
+        document.addEventListener('click', function(e) {
+            const menu = document.getElementById('userMenu');
+            const userInfo = document.querySelector('.user-info');
+            if (menu && userInfo && !userInfo.contains(e.target)) {
+                menu.classList.remove('active');
+            }
+        });
+
+        // Drag and drop
+        const uploadArea = document.getElementById('uploadArea');
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            handleFileSelect(e.dataTransfer.files);
+        });
+
+        function formatSize(bytes) {
+            if (bytes >= 1024 * 1024) {
+                return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+            } else if (bytes >= 1024) {
+                return (bytes / 1024).toFixed(2) + ' KB';
+            }
+            return bytes + ' bytes';
+        }
+
+        function handleFileSelect(files) {
+            if (!files || files.length === 0) return;
+            
+            const file = files[0];
+            if (!file.name.endsWith('.zip')) {
+                showStatus('Please select a .zip backup file', 'error');
+                return;
+            }
+
+            selectedFile = file;
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileSize').textContent = formatSize(file.size);
+            document.getElementById('selectedFile').classList.add('visible');
+            document.getElementById('restoreBtn').disabled = false;
+            document.getElementById('uploadArea').style.display = 'none';
+        }
+
+        function clearFile() {
+            selectedFile = null;
+            document.getElementById('fileInput').value = '';
+            document.getElementById('selectedFile').classList.remove('visible');
+            document.getElementById('restoreBtn').disabled = true;
+            document.getElementById('uploadArea').style.display = 'block';
+        }
+
+        function showStatus(message, type) {
+            const el = document.getElementById('statusMessage');
+            el.textContent = message;
+            el.className = 'status-message ' + type;
+        }
+
+        async function restoreBackup() {
+            if (!selectedFile) return;
+
+            if (!confirm('Are you sure you want to restore this backup?\n\nThis will overwrite all current data and cannot be undone.')) {
+                return;
+            }
+
+            const btn = document.getElementById('restoreBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<svg viewBox="0 0 24 24" class="spin"><circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="32"/></svg> Restoring...';
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            try {
+                const resp = await fetch('/backup/restore', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await resp.json();
+
+                if (resp.ok) {
+                    showStatus(`Backup restored successfully. ${data.files} files restored.`, 'success');
+                    clearFile();
+                } else {
+                    showStatus(data.error || 'Failed to restore backup', 'error');
+                }
+            } catch (err) {
+                showStatus('Failed to restore backup: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Restore Backup';
+            }
+        }
+    </script>
+    <style>
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .spin {
+            animation: spin 1s linear infinite;
+        }
+    </style>
+</body>
+</html>

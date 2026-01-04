@@ -2,6 +2,7 @@ package srv
 
 import (
 	"archive/zip"
+	"bytes"
 	"context"
 	"crypto/rand"
 	"database/sql"
@@ -1630,6 +1631,291 @@ func (s *Server) HandleTemplateFileCreate(w http.ResponseWriter, r *http.Request
 	json.NewEncoder(w).Encode(map[string]string{"message": "File created successfully"})
 }
 
+func (s *Server) HandleBackupPage(w http.ResponseWriter, r *http.Request) {
+	session := s.getSession(r)
+	if session == nil {
+		http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
+		return
+	}
+
+	data := struct {
+		Email   string
+		Name    string
+		Picture string
+	}{
+		Email:   session.Email,
+		Name:    session.Name,
+		Picture: session.Picture,
+	}
+
+	tmpl, err := template.ParseFiles(filepath.Join(s.TemplatesDir, "backup.html"))
+	if err != nil {
+		http.Error(w, "Failed to load template", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	tmpl.Execute(w, data)
+}
+
+func (s *Server) HandleBackupDownload(w http.ResponseWriter, r *http.Request) {
+	email := s.getSessionEmail(r)
+	if email == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Create a buffer to write the zip to
+	buf := new(bytes.Buffer)
+	zipWriter := zip.NewWriter(buf)
+
+	baseDir := "/home/exedev/hubv2"
+
+	// Add database file (checkpoint WAL first for consistency)
+	if _, err := s.DB.Exec("PRAGMA wal_checkpoint(TRUNCATE)"); err != nil {
+		slog.Warn("Failed to checkpoint WAL", "error", err)
+	}
+
+	dbPath := filepath.Join(baseDir, "db.sqlite3")
+	if err := addFileToZip(zipWriter, dbPath, "db.sqlite3"); err != nil {
+		slog.Error("Failed to add database to backup", "error", err)
+		http.Error(w, "Failed to create backup", http.StatusInternalServerError)
+		return
+	}
+
+	// Add lib folder contents
+	libDir := filepath.Join(baseDir, "lib")
+	err := filepath.Walk(libDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		relPath, err := filepath.Rel(baseDir, path)
+		if err != nil {
+			return err
+		}
+		return addFileToZip(zipWriter, path, relPath)
+	})
+	if err != nil {
+		slog.Error("Failed to add lib folder to backup", "error", err)
+		http.Error(w, "Failed to create backup", http.StatusInternalServerError)
+		return
+	}
+
+	// Add templates folder contents
+	templatesDir := filepath.Join(baseDir, "templates")
+	err = filepath.Walk(templatesDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		// Skip .zip files in templates (backup files, etc)
+		if !info.IsDir() && strings.HasSuffix(info.Name(), ".zip") {
+			return nil
+		}
+		// Skip __pycache__
+		if info.IsDir() && info.Name() == "__pycache__" {
+			return filepath.SkipDir
+		}
+		if info.IsDir() {
+			return nil
+		}
+		relPath, err := filepath.Rel(baseDir, path)
+		if err != nil {
+			return err
+		}
+		return addFileToZip(zipWriter, path, relPath)
+	})
+	if err != nil {
+		slog.Error("Failed to add templates folder to backup", "error", err)
+		http.Error(w, "Failed to create backup", http.StatusInternalServerError)
+		return
+	}
+
+	if err := zipWriter.Close(); err != nil {
+		http.Error(w, "Failed to create backup", http.StatusInternalServerError)
+		return
+	}
+
+	// Generate filename with timestamp
+	timestamp := time.Now().Format("2006-01-02_150405")
+	fileName := fmt.Sprintf("hubv2_backup_%s.zip", timestamp)
+
+	slog.Info("Backup downloaded", "by", email, "size", buf.Len())
+
+	w.Header().Set("Content-Type", "application/zip")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", fileName))
+	w.Write(buf.Bytes())
+}
+
+func addFileToZip(zipWriter *zip.Writer, filePath, zipPath string) error {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	info, err := file.Stat()
+	if err != nil {
+		return err
+	}
+
+	header, err := zip.FileInfoHeader(info)
+	if err != nil {
+		return err
+	}
+	header.Name = zipPath
+	header.Method = zip.Deflate
+
+	writer, err := zipWriter.CreateHeader(header)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(writer, file)
+	return err
+}
+
+func (s *Server) HandleBackupRestore(w http.ResponseWriter, r *http.Request) {
+	email := s.getSessionEmail(r)
+	if email == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	if err := r.ParseMultipartForm(256 << 20); err != nil { // 256MB max
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to parse form: " + err.Error()})
+		return
+	}
+
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "No file provided"})
+		return
+	}
+	defer file.Close()
+
+	// Read the entire file into memory
+	zipData, err := io.ReadAll(file)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to read file"})
+		return
+	}
+
+	// Open the zip archive
+	zipReader, err := zip.NewReader(bytes.NewReader(zipData), int64(len(zipData)))
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid zip file: " + err.Error()})
+		return
+	}
+
+	baseDir := "/home/exedev/hubv2"
+	var restoredFiles []string
+
+	// Validate the zip contains expected files
+	hasDB := false
+	for _, f := range zipReader.File {
+		if f.Name == "db.sqlite3" {
+			hasDB = true
+			break
+		}
+	}
+	if !hasDB {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid backup: missing db.sqlite3"})
+		return
+	}
+
+	// Extract files
+	for _, f := range zipReader.File {
+		// Security: prevent path traversal
+		if strings.Contains(f.Name, "..") {
+			continue
+		}
+
+		// Only allow specific paths
+		if f.Name != "db.sqlite3" && 
+		   !strings.HasPrefix(f.Name, "lib/") && 
+		   !strings.HasPrefix(f.Name, "templates/") {
+			continue
+		}
+
+		destPath := filepath.Join(baseDir, f.Name)
+
+		if f.FileInfo().IsDir() {
+			os.MkdirAll(destPath, 0755)
+			continue
+		}
+
+		// Ensure parent directory exists
+		os.MkdirAll(filepath.Dir(destPath), 0755)
+
+		// For database, we need special handling
+		if f.Name == "db.sqlite3" {
+			// Close current database connections
+			if err := s.DB.Close(); err != nil {
+				slog.Warn("Failed to close database", "error", err)
+			}
+
+			// Remove WAL and SHM files
+			os.Remove(destPath + "-wal")
+			os.Remove(destPath + "-shm")
+		}
+
+		// Extract the file
+		if err := extractZipFile(f, destPath); err != nil {
+			slog.Error("Failed to extract file", "file", f.Name, "error", err)
+			continue
+		}
+		restoredFiles = append(restoredFiles, f.Name)
+	}
+
+	// Reopen the database
+	dbPath := filepath.Join(baseDir, "db.sqlite3")
+	if err := s.setUpDatabase(dbPath); err != nil {
+		slog.Error("Failed to reopen database after restore", "error", err)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Restored files but failed to reopen database. Server restart may be required."})
+		return
+	}
+
+	slog.Info("Backup restored", "by", email, "files", len(restoredFiles))
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "Backup restored successfully",
+		"files":   len(restoredFiles),
+	})
+}
+
+func extractZipFile(f *zip.File, destPath string) error {
+	src, err := f.Open()
+	if err != nil {
+		return err
+	}
+	defer src.Close()
+
+	dst, err := os.Create(destPath)
+	if err != nil {
+		return err
+	}
+	defer dst.Close()
+
+	_, err = io.Copy(dst, src)
+	return err
+}
+
 func (s *Server) Serve(addr string) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", s.HandleRoot)
@@ -1652,6 +1938,11 @@ func (s *Server) Serve(addr string) error {
 	mux.HandleFunc("POST /api/template/file", s.HandleTemplateFileSave)
 	mux.HandleFunc("DELETE /api/template/file", s.HandleTemplateFileDelete)
 	mux.HandleFunc("POST /api/template/file/create", s.HandleTemplateFileCreate)
+
+	// Backup/Restore routes
+	mux.HandleFunc("GET /backup", s.HandleBackupPage)
+	mux.HandleFunc("GET /backup/download", s.HandleBackupDownload)
+	mux.HandleFunc("POST /backup/restore", s.HandleBackupRestore)
 
 	// Admin routes
 	mux.HandleFunc("GET /login", s.HandleAdminLogin)
