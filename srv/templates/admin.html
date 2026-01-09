@@ -544,6 +544,74 @@
             border-color: #e74c3c;
             color: #e74c3c;
         }
+        .btn-action-success {
+            border-color: #4caf50;
+        }
+        .btn-action-success svg {
+            stroke: #4caf50;
+        }
+        .btn-action-success:hover {
+            background: #1a3a1a;
+            border-color: #4caf50;
+            color: #4caf50;
+        }
+        /* iOS-style toggle switch */
+        .toggle-switch {
+            position: relative;
+            width: 51px;
+            height: 31px;
+            flex-shrink: 0;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #4caf50;
+            transition: 0.3s;
+            border-radius: 31px;
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 27px;
+            width: 27px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .toggle-switch input:checked + .toggle-slider {
+            background-color: #48484a;
+        }
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(20px);
+        }
+        .toggle-switch:hover .toggle-slider {
+            filter: brightness(1.1);
+        }
+        .toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            color: #888;
+        }
+        .toggle-label.enabled {
+            color: #4caf50;
+        }
+        .toggle-label.disabled {
+            color: #888;
+        }
         @media (max-width: 600px) {
             body {
                 padding: 15px;
@@ -686,13 +754,12 @@
                                 <svg viewBox="0 0 24 24"><path d="M12 4v12m0 0l-4-4m4 4l4-4M4 17v2a1 1 0 001 1h14a1 1 0 001-1v-2"/></svg>
                                 Download
                             </a>
-                            <form method="POST" action="/token/delete" onsubmit="return confirm('Delete this token?')">
-                                <input type="hidden" name="id" value="{{.ID}}">
-                                <button type="submit" class="btn-action btn-action-danger">
-                                    <svg viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                    Delete
-                                </button>
-                            </form>
+                            <label class="toggle-label enabled">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" onchange="toggleClientStatus(this, {{.ID}}, '{{.Name}}')">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </label>
                             {{end}}
                         </div>
                     </td>
@@ -726,19 +793,88 @@
                         <svg viewBox="0 0 24 24"><path d="M12 4v12m0 0l-4-4m4 4l4-4M4 17v2a1 1 0 001 1h14a1 1 0 001-1v-2"/></svg>
                         Download
                     </a>
-                    <form method="POST" action="/token/delete" onsubmit="return confirm('Delete this token?')">
-                        <input type="hidden" name="id" value="{{.ID}}">
-                        <button type="submit" class="btn-action btn-action-danger">
-                            <svg viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                            Delete
-                        </button>
-                    </form>
+                    <label class="toggle-label enabled">
+                        <label class="toggle-switch">
+                            <input type="checkbox" onchange="toggleClientStatus(this, {{.ID}}, '{{.Name}}')">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </label>
                     {{end}}
                 </div>
             </div>
             {{end}}
         </div>
     </div>
+
+    {{if .DisabledTokens}}
+    <div class="card">
+        <h2>Disabled Client Packages</h2>
+        <table class="tokens-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Token</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .DisabledTokens}}
+                <tr style="opacity: 0.6;">
+                    <td><strong>{{.Name}}</strong></td>
+                    <td>
+                        <span class="badge badge-{{.TokenType}}" style="opacity: 0.5;">{{.TokenType}}</span>
+                    </td>
+                    <td>
+                        <div class="token-value">
+                            <span class="token-text token-hidden" data-token="{{.Token}}">••••••••</span>
+                            <button type="button" class="btn-show" onclick="toggleToken(this)" title="Show token">show</button>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            {{if eq .TokenType "download"}}
+                            <label class="toggle-label disabled">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" checked onchange="toggleClientStatus(this, {{.ID}}, '{{.Name}}')">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </label>
+                            {{end}}
+                        </div>
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+        <div class="token-cards">
+            {{range .DisabledTokens}}
+            <div class="token-card" style="opacity: 0.6;">
+                <div class="token-card-header">
+                    <span class="token-card-name">{{.Name}}</span>
+                    <span class="badge badge-{{.TokenType}}" style="opacity: 0.5;">{{.TokenType}}</span>
+                </div>
+                <div class="token-card-value">
+                    <div class="token-value">
+                        <span class="token-text token-hidden" data-token="{{.Token}}">••••••••</span>
+                        <button type="button" class="btn-show" onclick="toggleToken(this)" title="Show token">show</button>
+                    </div>
+                </div>
+                <div class="token-card-actions">
+                    {{if eq .TokenType "download"}}
+                    <label class="toggle-label disabled">
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked onchange="toggleClientStatus(this, {{.ID}}, '{{.Name}}')">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </label>
+                    {{end}}
+                </div>
+            </div>
+            {{end}}
+        </div>
+    </div>
+    {{end}}
 
     <div class="modal-overlay" id="historyModal">
         <div class="modal">
@@ -836,6 +972,32 @@
                 form.submit();
             }
             return false;
+        }
+
+        function toggleClientStatus(checkbox, id, name) {
+            const isDisabling = checkbox.checked;
+            const action = isDisabling ? 'disable' : 'enable';
+            const message = isDisabling 
+                ? `Disable client package "${name}"?\n\nThe client will no longer be able to download updates.`
+                : `Re-enable client package "${name}"?`;
+            
+            if (!confirm(message)) {
+                checkbox.checked = !checkbox.checked;
+                return;
+            }
+
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/token/${action}`;
+            
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'id';
+            input.value = id;
+            
+            form.appendChild(input);
+            document.body.appendChild(form);
+            form.submit();
         }
 
         function toggleUserMenu(event) {

@@ -589,28 +589,36 @@ func (s *Server) HandleAdmin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	q := dbgen.New(s.DB)
-	tokens, err := q.GetAllTokens(r.Context())
+	activeTokens, err := q.GetActiveTokens(r.Context())
 	if err != nil {
 		http.Error(w, "Failed to get tokens", http.StatusInternalServerError)
 		return
 	}
 
+	disabledTokens, err := q.GetDisabledTokens(r.Context())
+	if err != nil {
+		http.Error(w, "Failed to get disabled tokens", http.StatusInternalServerError)
+		return
+	}
+
 	data := struct {
-		Email        string
-		Name         string
-		Picture      string
-		Tokens       []dbgen.GetAllTokensRow
-		File         FileInfo
-		FileName     string
-		VersionFiles []FileInfo
+		Email          string
+		Name           string
+		Picture        string
+		Tokens         []dbgen.GetActiveTokensRow
+		DisabledTokens []dbgen.GetDisabledTokensRow
+		File           FileInfo
+		FileName       string
+		VersionFiles   []FileInfo
 	}{
-		Email:        session.Email,
-		Name:         session.Name,
-		Picture:      session.Picture,
-		Tokens:       tokens,
-		File:         s.getFileInfo(),
-		FileName:     s.LatestFile,
-		VersionFiles: s.getAllVersionFileInfo(),
+		Email:          session.Email,
+		Name:           session.Name,
+		Picture:        session.Picture,
+		Tokens:         activeTokens,
+		DisabledTokens: disabledTokens,
+		File:           s.getFileInfo(),
+		FileName:       s.LatestFile,
+		VersionFiles:   s.getAllVersionFileInfo(),
 	}
 
 	tmpl, err := template.ParseFiles(filepath.Join(s.TemplatesDir, "admin.html"))
@@ -761,7 +769,7 @@ func (s *Server) HandleAdminCreateToken(w http.ResponseWriter, r *http.Request) 
 	http.Redirect(w, r, "/created?name="+url.QueryEscape(name), http.StatusSeeOther)
 }
 
-func (s *Server) HandleAdminDeleteToken(w http.ResponseWriter, r *http.Request) {
+func (s *Server) HandleAdminDisableToken(w http.ResponseWriter, r *http.Request) {
 	email := s.getSessionEmail(r)
 	if email == "" {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -782,22 +790,52 @@ func (s *Server) HandleAdminDeleteToken(w http.ResponseWriter, r *http.Request) 
 
 	q := dbgen.New(s.DB)
 
-	// Check if it's an upload token - prevent deletion
+	// Check if it's an upload token - prevent disabling
 	tokens, _ := q.GetAllTokens(r.Context())
 	for _, t := range tokens {
 		if t.ID == id && t.TokenType == "upload" {
-			http.Error(w, "Cannot delete upload token", http.StatusForbidden)
+			http.Error(w, "Cannot disable upload token", http.StatusForbidden)
 			return
 		}
 	}
 
-	err = q.DeleteToken(r.Context(), id)
+	err = q.DisableToken(r.Context(), id)
 	if err != nil {
-		http.Error(w, "Failed to delete token", http.StatusInternalServerError)
+		http.Error(w, "Failed to disable token", http.StatusInternalServerError)
 		return
 	}
 
-	slog.Info("Token deleted", "id", id, "by", email)
+	slog.Info("Token disabled", "id", id, "by", email)
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func (s *Server) HandleAdminEnableToken(w http.ResponseWriter, r *http.Request) {
+	email := s.getSessionEmail(r)
+	if email == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Invalid form", http.StatusBadRequest)
+		return
+	}
+
+	idStr := r.FormValue("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
+
+	q := dbgen.New(s.DB)
+	err = q.EnableToken(r.Context(), id)
+	if err != nil {
+		http.Error(w, "Failed to enable token", http.StatusInternalServerError)
+		return
+	}
+
+	slog.Info("Token enabled", "id", id, "by", email)
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
@@ -1951,7 +1989,8 @@ func (s *Server) Serve(addr string) error {
 	mux.HandleFunc("GET /logged-out", s.HandleLoggedOut)
 	mux.HandleFunc("POST /token/regenerate", s.HandleAdminRegenerateToken)
 	mux.HandleFunc("POST /token/create", s.HandleAdminCreateToken)
-	mux.HandleFunc("POST /token/delete", s.HandleAdminDeleteToken)
+	mux.HandleFunc("POST /token/disable", s.HandleAdminDisableToken)
+	mux.HandleFunc("POST /token/enable", s.HandleAdminEnableToken)
 
 	slog.Info("starting server", "addr", addr)
 	return http.ListenAndServe(addr, mux)

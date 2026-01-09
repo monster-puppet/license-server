@@ -104,17 +104,79 @@ func (q *Queries) DeleteSession(ctx context.Context, id string) error {
 	return err
 }
 
-const deleteToken = `-- name: DeleteToken :exec
-DELETE FROM tokens WHERE id = ?
+const disableToken = `-- name: DisableToken :exec
+UPDATE tokens SET disabled = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?
 `
 
-func (q *Queries) DeleteToken(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, deleteToken, id)
+func (q *Queries) DisableToken(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, disableToken, id)
 	return err
 }
 
+const enableToken = `-- name: EnableToken :exec
+UPDATE tokens SET disabled = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+`
+
+func (q *Queries) EnableToken(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, enableToken, id)
+	return err
+}
+
+const getActiveTokens = `-- name: GetActiveTokens :many
+SELECT id, name, token, token_type, maya_versions, default_maya_version, scene_settings, requirements, disabled, created_at, updated_at FROM tokens WHERE disabled = 0 ORDER BY token_type, name
+`
+
+type GetActiveTokensRow struct {
+	ID                 int64     `json:"id"`
+	Name               string    `json:"name"`
+	Token              string    `json:"token"`
+	TokenType          string    `json:"token_type"`
+	MayaVersions       *string   `json:"maya_versions"`
+	DefaultMayaVersion *string   `json:"default_maya_version"`
+	SceneSettings      *string   `json:"scene_settings"`
+	Requirements       *string   `json:"requirements"`
+	Disabled           int64     `json:"disabled"`
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
+}
+
+func (q *Queries) GetActiveTokens(ctx context.Context) ([]GetActiveTokensRow, error) {
+	rows, err := q.db.QueryContext(ctx, getActiveTokens)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetActiveTokensRow{}
+	for rows.Next() {
+		var i GetActiveTokensRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Token,
+			&i.TokenType,
+			&i.MayaVersions,
+			&i.DefaultMayaVersion,
+			&i.SceneSettings,
+			&i.Requirements,
+			&i.Disabled,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getAllTokens = `-- name: GetAllTokens :many
-SELECT id, name, token, token_type, maya_versions, default_maya_version, scene_settings, requirements, created_at, updated_at FROM tokens ORDER BY token_type, name
+SELECT id, name, token, token_type, maya_versions, default_maya_version, scene_settings, requirements, disabled, created_at, updated_at FROM tokens ORDER BY token_type, name
 `
 
 type GetAllTokensRow struct {
@@ -126,6 +188,7 @@ type GetAllTokensRow struct {
 	DefaultMayaVersion *string   `json:"default_maya_version"`
 	SceneSettings      *string   `json:"scene_settings"`
 	Requirements       *string   `json:"requirements"`
+	Disabled           int64     `json:"disabled"`
 	CreatedAt          time.Time `json:"created_at"`
 	UpdatedAt          time.Time `json:"updated_at"`
 }
@@ -148,6 +211,60 @@ func (q *Queries) GetAllTokens(ctx context.Context) ([]GetAllTokensRow, error) {
 			&i.DefaultMayaVersion,
 			&i.SceneSettings,
 			&i.Requirements,
+			&i.Disabled,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getDisabledTokens = `-- name: GetDisabledTokens :many
+SELECT id, name, token, token_type, maya_versions, default_maya_version, scene_settings, requirements, disabled, created_at, updated_at FROM tokens WHERE disabled = 1 ORDER BY token_type, name
+`
+
+type GetDisabledTokensRow struct {
+	ID                 int64     `json:"id"`
+	Name               string    `json:"name"`
+	Token              string    `json:"token"`
+	TokenType          string    `json:"token_type"`
+	MayaVersions       *string   `json:"maya_versions"`
+	DefaultMayaVersion *string   `json:"default_maya_version"`
+	SceneSettings      *string   `json:"scene_settings"`
+	Requirements       *string   `json:"requirements"`
+	Disabled           int64     `json:"disabled"`
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
+}
+
+func (q *Queries) GetDisabledTokens(ctx context.Context) ([]GetDisabledTokensRow, error) {
+	rows, err := q.db.QueryContext(ctx, getDisabledTokens)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetDisabledTokensRow{}
+	for rows.Next() {
+		var i GetDisabledTokensRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Token,
+			&i.TokenType,
+			&i.MayaVersions,
+			&i.DefaultMayaVersion,
+			&i.SceneSettings,
+			&i.Requirements,
+			&i.Disabled,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -165,7 +282,7 @@ func (q *Queries) GetAllTokens(ctx context.Context) ([]GetAllTokensRow, error) {
 }
 
 const getDownloadTokens = `-- name: GetDownloadTokens :many
-SELECT token FROM tokens WHERE token_type = 'download'
+SELECT token FROM tokens WHERE token_type = 'download' AND disabled = 0
 `
 
 func (q *Queries) GetDownloadTokens(ctx context.Context) ([]string, error) {
@@ -219,7 +336,7 @@ func (q *Queries) GetSession(ctx context.Context, id string) (GetSessionRow, err
 }
 
 const getTokenByName = `-- name: GetTokenByName :one
-SELECT id, name, token, token_type, maya_versions, default_maya_version, scene_settings, requirements, created_at, updated_at FROM tokens WHERE name = ?
+SELECT id, name, token, token_type, maya_versions, default_maya_version, scene_settings, requirements, disabled, created_at, updated_at FROM tokens WHERE name = ?
 `
 
 type GetTokenByNameRow struct {
@@ -231,6 +348,7 @@ type GetTokenByNameRow struct {
 	DefaultMayaVersion *string   `json:"default_maya_version"`
 	SceneSettings      *string   `json:"scene_settings"`
 	Requirements       *string   `json:"requirements"`
+	Disabled           int64     `json:"disabled"`
 	CreatedAt          time.Time `json:"created_at"`
 	UpdatedAt          time.Time `json:"updated_at"`
 }
@@ -247,6 +365,7 @@ func (q *Queries) GetTokenByName(ctx context.Context, name string) (GetTokenByNa
 		&i.DefaultMayaVersion,
 		&i.SceneSettings,
 		&i.Requirements,
+		&i.Disabled,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

@@ -42,6 +42,7 @@ type Token struct {
 	DefaultMayaVersion *string   `json:"default_maya_version"`
 	SceneSettings      *string   `json:"scene_settings"`
 	Requirements       *string   `json:"requirements"`
+	Disabled           int64     `json:"disabled"`
 }
 
 type UploadHistory struct {
