@@ -104,6 +104,15 @@ func (q *Queries) DeleteSession(ctx context.Context, id string) error {
 	return err
 }
 
+const deleteToken = `-- name: DeleteToken :exec
+DELETE FROM tokens WHERE id = ?
+`
+
+func (q *Queries) DeleteToken(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteToken, id)
+	return err
+}
+
 const disableToken = `-- name: DisableToken :exec
 UPDATE tokens SET disabled = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?
 `

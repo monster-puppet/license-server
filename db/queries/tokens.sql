@@ -31,6 +31,9 @@ UPDATE tokens SET disabled = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?;
 -- name: EnableToken :exec
 UPDATE tokens SET disabled = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?;
 
+-- name: DeleteToken :exec
+DELETE FROM tokens WHERE id = ?;
+
 -- name: CreateSession :exec
 INSERT INTO sessions (id, email, name, picture, expires_at) VALUES (?, ?, ?, ?, ?);
 

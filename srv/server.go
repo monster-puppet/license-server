@@ -839,6 +839,51 @@ func (s *Server) HandleAdminEnableToken(w http.ResponseWriter, r *http.Request) 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
+func (s *Server) HandleAdminDeleteToken(w http.ResponseWriter, r *http.Request) {
+	email := s.getSessionEmail(r)
+	if email == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Invalid form", http.StatusBadRequest)
+		return
+	}
+
+	idStr := r.FormValue("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
+
+	q := dbgen.New(s.DB)
+
+	// Only allow deleting disabled tokens
+	tokens, _ := q.GetDisabledTokens(r.Context())
+	canDelete := false
+	for _, t := range tokens {
+		if t.ID == id {
+			canDelete = true
+			break
+		}
+	}
+	if !canDelete {
+		http.Error(w, "Can only delete disabled tokens", http.StatusForbidden)
+		return
+	}
+
+	err = q.DeleteToken(r.Context(), id)
+	if err != nil {
+		http.Error(w, "Failed to delete token", http.StatusInternalServerError)
+		return
+	}
+
+	slog.Info("Token deleted", "id", id, "by", email)
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
 func generateRandomString(n int) string {
 	b := make([]byte, n)
 	rand.Read(b)
@@ -1991,6 +2036,7 @@ func (s *Server) Serve(addr string) error {
 	mux.HandleFunc("POST /token/create", s.HandleAdminCreateToken)
 	mux.HandleFunc("POST /token/disable", s.HandleAdminDisableToken)
 	mux.HandleFunc("POST /token/enable", s.HandleAdminEnableToken)
+	mux.HandleFunc("POST /token/delete", s.HandleAdminDeleteToken)
 
 	slog.Info("starting server", "addr", addr)
 	return http.ListenAndServe(addr, mux)
